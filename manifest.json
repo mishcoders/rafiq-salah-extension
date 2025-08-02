@@ -3,12 +3,13 @@
   "name": "Prayer Pal - رفيق الصلاة",
   "version": "2.3",
   "description": "Prayer times extension for Arab countries with customizable reminders | إكستنشن رفيق الصلاة للدول العربية مع تذكير قابل للتخصيص وطرق حساب متعددة",
-  "homepage_url": "https://github.com/yourusername/salah-extension",
+  "homepage_url": "https://rafiq-salah.vercel.app",
   "author": "Prayer Pal Team",
   "permissions": [
     "storage",
     "alarms",
-    "notifications"
+    "notifications",
+    "geolocation"
   ],
   "action": {
     "default_popup": "popup.html",

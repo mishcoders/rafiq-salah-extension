@@ -132,10 +132,13 @@ function updateSaveButton() {
 }
 
 async function checkUserLocation() {
-    const result = await chrome.storage.local.get(['selectedCountry', 'selectedCity']);
+    const result = await chrome.storage.local.get(['selectedCountry', 'selectedCity', 'locationDetected']);
     
     if (result.selectedCountry && result.selectedCity) {
         showPrayerTimesSection(result.selectedCountry, result.selectedCity);
+    } else if (!result.locationDetected) {
+        // First time user - attempt automatic location detection
+        await attemptAutoLocationDetection();
     } else {
         showLocationSelection();
     }
@@ -147,12 +150,231 @@ function showLocationSelection() {
     locationSelection.classList.remove('hidden');
 }
 
+// Automatic location detection functions
+async function attemptAutoLocationDetection() {
+    try {
+        // Update loading message for location detection
+        updateLoadingMessage('جاري تحديد موقعك تلقائياً...');
+        showLoading(true);
+        
+        const position = await getCurrentPosition();
+        const { latitude, longitude } = position.coords;
+        
+        // Update loading message for finding closest city
+        updateLoadingMessage('جاري البحث عن أقرب مدينة...');
+        
+        // Find closest city from our data
+        const closestLocation = await findClosestCity(latitude, longitude);
+        
+        if (closestLocation) {
+            // Save the detected location
+            await chrome.storage.local.set({
+                selectedCountry: closestLocation.countryCode,
+                selectedCity: closestLocation.cityName,
+                locationDetected: true,
+                autoDetected: true
+            });
+            
+            // Show prayer times for detected location
+            await showPrayerTimesSection(closestLocation.countryCode, closestLocation.cityName);
+        } else {
+            // Fallback to manual selection
+            await chrome.storage.local.set({ locationDetected: true });
+            showLocationSelection();
+        }
+    } catch (error) {
+        console.log('Auto location detection failed:', error);
+        // Mark as attempted and show manual selection
+        await chrome.storage.local.set({ locationDetected: true });
+        showLocationSelection();
+    } finally {
+        showLoading(false);
+        // Reset loading message
+        updateLoadingMessage('جاري تحميل رفيق الصلاة...');
+    }
+}
+
+// Update loading message
+function updateLoadingMessage(message) {
+    if (loadingState) {
+        loadingState.textContent = message;
+    }
+}
+
+
+
+function getCurrentPosition() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Geolocation is not supported'));
+            return;
+        }
+        
+        navigator.geolocation.getCurrentPosition(
+            resolve,
+            reject,
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 300000 // 5 minutes
+            }
+        );
+    });
+}
+
+// Calculate distance between two coordinates using Haversine formula
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+// Find closest city from available data
+async function findClosestCity(userLat, userLon) {
+    try {
+        // Get approximate coordinates for major cities in each country
+        const cityCoordinates = await getCityCoordinates();
+        
+        let closestCity = null;
+        let minDistance = Infinity;
+        
+        for (const country of citiesData) {
+            for (const city of country.cities) {
+                const coords = cityCoordinates[country.code]?.[city.en];
+                if (coords) {
+                    const distance = calculateDistance(userLat, userLon, coords.lat, coords.lon);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestCity = {
+                            countryCode: country.code,
+                            cityName: city.en,
+                            distance: distance
+                        };
+                    }
+                }
+            }
+        }
+        
+        // Only return if within reasonable distance (500km)
+        return (closestCity && closestCity.distance < 500) ? closestCity : null;
+    } catch (error) {
+        console.error('Error finding closest city:', error);
+        return null;
+    }
+}
+
+// Get approximate coordinates for major cities
+function getCityCoordinates() {
+    // This is a simplified dataset with major cities coordinates
+    // In a real implementation, you might want to use a more comprehensive API
+    return {
+        'EG': {
+            'Cairo': { lat: 30.0444, lon: 31.2357 },
+            'Alexandria': { lat: 31.2001, lon: 29.9187 },
+            'Giza': { lat: 30.0131, lon: 31.2089 },
+            'Luxor': { lat: 25.6872, lon: 32.6396 },
+            'Aswan': { lat: 24.0889, lon: 32.8998 }
+        },
+        'SA': {
+            'Riyadh': { lat: 24.7136, lon: 46.6753 },
+            'Jeddah': { lat: 21.4858, lon: 39.1925 },
+            'Mecca': { lat: 21.3891, lon: 39.8579 },
+            'Medina': { lat: 24.5247, lon: 39.5692 },
+            'Dammam': { lat: 26.4207, lon: 50.0888 }
+        },
+        'AE': {
+            'Dubai': { lat: 25.2048, lon: 55.2708 },
+            'Abu Dhabi': { lat: 24.2992, lon: 54.6972 },
+            'Sharjah': { lat: 25.3463, lon: 55.4209 },
+            'Ajman': { lat: 25.4052, lon: 55.5136 }
+        },
+        'JO': {
+            'Amman': { lat: 31.9454, lon: 35.9284 },
+            'Zarqa': { lat: 32.0727, lon: 36.0888 },
+            'Irbid': { lat: 32.5556, lon: 35.8500 }
+        },
+        'LB': {
+            'Beirut': { lat: 33.8938, lon: 35.5018 },
+            'Tripoli': { lat: 34.4367, lon: 35.8497 },
+            'Sidon': { lat: 33.5633, lon: 35.3650 }
+        },
+        'SY': {
+            'Damascus': { lat: 33.5138, lon: 36.2765 },
+            'Aleppo': { lat: 36.2021, lon: 37.1343 },
+            'Homs': { lat: 34.7394, lon: 36.7163 }
+        },
+        'IQ': {
+            'Baghdad': { lat: 33.3152, lon: 44.3661 },
+            'Basra': { lat: 30.5085, lon: 47.7804 },
+            'Mosul': { lat: 36.3350, lon: 43.1189 }
+        },
+        'KW': {
+            'Kuwait City': { lat: 29.3759, lon: 47.9774 },
+            'Hawalli': { lat: 29.3375, lon: 48.0281 }
+        },
+        'QA': {
+            'Doha': { lat: 25.2854, lon: 51.5310 },
+            'Al Rayyan': { lat: 25.2919, lon: 51.4240 }
+        },
+        'BH': {
+            'Manama': { lat: 26.2285, lon: 50.5860 },
+            'Riffa': { lat: 26.1300, lon: 50.5550 }
+        },
+        'OM': {
+            'Muscat': { lat: 23.5859, lon: 58.4059 },
+            'Salalah': { lat: 17.0151, lon: 54.0924 }
+        },
+        'YE': {
+            'Sanaa': { lat: 15.3694, lon: 44.1910 },
+            'Aden': { lat: 12.7797, lon: 45.0367 }
+        },
+        'PS': {
+            'Gaza': { lat: 31.3547, lon: 34.3088 },
+            'Ramallah': { lat: 31.9073, lon: 35.2044 }
+        },
+        'MA': {
+            'Casablanca': { lat: 33.5731, lon: -7.5898 },
+            'Rabat': { lat: 34.0209, lon: -6.8416 },
+            'Marrakech': { lat: 31.6295, lon: -7.9811 }
+        },
+        'DZ': {
+            'Algiers': { lat: 36.7538, lon: 3.0588 },
+            'Oran': { lat: 35.6976, lon: -0.6337 },
+            'Constantine': { lat: 36.3650, lon: 6.6147 }
+        },
+        'TN': {
+            'Tunis': { lat: 36.8065, lon: 10.1815 },
+            'Sfax': { lat: 34.7406, lon: 10.7603 }
+        },
+        'LY': {
+            'Tripoli': { lat: 32.8872, lon: 13.1913 },
+            'Benghazi': { lat: 32.1167, lon: 20.0683 }
+        },
+        'SD': {
+            'Khartoum': { lat: 15.5007, lon: 32.5599 },
+            'Omdurman': { lat: 15.6445, lon: 32.4777 }
+        },
+        'MR': {
+            'Nouakchott': { lat: 18.0735, lon: -15.9582 }
+        }
+    };
+}
+
 async function showPrayerTimesSection(countryCode, cityName) {
     const country = citiesData.find(c => c.code === countryCode);
     const city = country?.cities.find(c => c.en === cityName);
     
     if (country && city) {
-        locationText.textContent = `${city.ar}, ${country.name}`;
+        // Check if location was auto-detected
+        const result = await chrome.storage.local.get(['autoDetected']);
+        const autoDetectedText = result.autoDetected ? ' 📍' : '';
+        
+        locationText.textContent = `${city.ar}, ${country.name}${autoDetectedText}`;
         locationDisplay.classList.remove('hidden');
         locationSelection.classList.add('hidden');
         
@@ -351,7 +573,8 @@ function setupEventListeners() {
         if (countryCode && cityName) {
             await chrome.storage.local.set({
                 selectedCountry: countryCode,
-                selectedCity: cityName
+                selectedCity: cityName,
+                autoDetected: false // Clear auto-detected flag for manual selection
             });
             
             await showPrayerTimesSection(countryCode, cityName);
