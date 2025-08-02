@@ -7,6 +7,14 @@
 
 ---
 
+## الغرض الوحيد للإكستنشن / Single Purpose Description
+
+**العربية**: إكستنشن رفيق الصلاة هو تطبيق مخصص حصرياً لعرض أوقات الصلاة للمسلمين في الدول العربية مع إمكانية إرسال تذكيرات قابلة للتخصيص قبل كل صلاة. الغرض الوحيد هو مساعدة المسلمين على معرفة أوقات الصلاة الدقيقة وتذكيرهم بها.
+
+**English**: Prayer Pal extension is dedicated exclusively to displaying prayer times for Muslims in Arab countries with customizable reminder notifications before each prayer. The single purpose is to help Muslims know accurate prayer times and be reminded of them.
+
+---
+
 ## العربية
 
 ### 1. المعلومات التي نجمعها
@@ -31,11 +39,34 @@
 - **لا نرسل بياناتك**: لا نرسل معلوماتك الشخصية لأي خوادم خارجية
 - **API خارجي**: نستخدم Aladhan API فقط لجلب رفيق الصلاة (نرسل اسم المدينة والدولة فقط)
 
-### 4. الأذونات المطلوبة
+### 4. الأذونات المطلوبة وتبريرها
 
-- **التخزين (storage)**: لحفظ إعداداتك وموقعك
-- **المنبهات (alarms)**: لجدولة تذكيرات الصلاة
-- **الإشعارات (notifications)**: لإرسال تنبيهات الصلاة
+#### أ) التخزين (Storage Permission)
+**التبرير**: ضروري لحفظ إعدادات المستخدم محلياً على الجهاز، بما في ذلك:
+- الموقع المختار (الدولة والمدينة)
+- إعدادات التذكير (الوقت المفضل للتذكير)
+- طريقة حساب رفيق الصلاة المختارة
+- حالة تفعيل/إيقاف التذكيرات
+- رفيق الصلاة المحفوظة لتجنب الطلبات المتكررة
+
+#### ب) المنبهات (Alarms Permission)
+**التبرير**: أساسي لوظيفة التذكير بأوقات الصلاة، حيث يتم:
+- جدولة تذكيرات تلقائية قبل كل صلاة
+- تحديث التذكيرات يومياً مع تغير رفيق الصلاة
+- إعداد منبهات دقيقة حسب التوقيت المحلي
+
+#### ج) الإشعارات (Notifications Permission)
+**التبرير**: لإرسال تنبيهات الصلاة للمستخدم، تشمل:
+- إشعارات تذكير قبل وقت الصلاة بالمدة المحددة
+- عرض اسم الصلاة والوقت المتبقي
+- تنبيهات صوتية ومرئية حسب إعدادات النظام
+
+#### د) الموقع الجغرافي (Geolocation Permission)
+**التبرير**: اختياري لتحديد الموقع تلقائياً، يستخدم لـ:
+- اقتراح الدولة والمدينة الأقرب للمستخدم
+- تحسين دقة حساب رفيق الصلاة
+- توفير تجربة أسهل للمستخدمين الجدد
+**ملاحظة**: يمكن للمستخدم اختيار الموقع يدوياً دون استخدام هذا الإذن
 
 ### 5. مشاركة البيانات
 
@@ -78,11 +109,34 @@ We use the information to:
 - **No Data Transmission**: We don't send your personal information to any external servers
 - **External API**: We only use Aladhan API to fetch prayer times (sending only city and country names)
 
-### 4. Required Permissions
+### 4. Required Permissions and Justifications
 
-- **Storage**: To save your settings and location
-- **Alarms**: To schedule prayer reminders
-- **Notifications**: To send prayer alerts
+#### A) Storage Permission
+**Justification**: Essential for saving user preferences locally on the device, including:
+- Selected location (country and city)
+- Reminder settings (preferred reminder time)
+- Selected prayer time calculation method
+- Reminder enable/disable status
+- Cached prayer times to avoid repeated API calls
+
+#### B) Alarms Permission
+**Justification**: Core functionality for prayer time reminders, used to:
+- Schedule automatic reminders before each prayer
+- Update reminders daily as prayer times change
+- Set precise alarms according to local timezone
+
+#### C) Notifications Permission
+**Justification**: To send prayer notifications to users, including:
+- Reminder notifications before prayer time at specified intervals
+- Display prayer name and remaining time
+- Audio and visual alerts according to system settings
+
+#### D) Geolocation Permission
+**Justification**: Optional for automatic location detection, used to:
+- Suggest the closest country and city to the user
+- Improve prayer time calculation accuracy
+- Provide easier experience for new users
+**Note**: Users can manually select location without using this permission
 
 ### 5. Data Sharing
 
