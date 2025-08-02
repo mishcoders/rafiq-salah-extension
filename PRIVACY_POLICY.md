@@ -2,8 +2,6 @@
 
 ## Privacy Policy - Prayer Pal Extension
 
-**آخر تحديث: ديسمبر 2024**  
-**Last Updated: December 2024**
 
 ---
 
