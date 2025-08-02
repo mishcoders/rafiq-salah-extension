@@ -53,6 +53,16 @@
         color: rgb(209, 166, 123);
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .header h1 img {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
       }
 
       .location-section {
@@ -252,8 +262,11 @@
         border: 1px solid rgba(209, 166, 123, 0.2);
         backdrop-filter: blur(8px);
         text-align: center;
-        margin-top: 12px;
-        display: inline-block;
+        margin-bottom: 16px;
+        display: block;
+        width: fit-content;
+        margin-left: auto;
+        margin-right: auto;
       }
 
       .countdown-time {
