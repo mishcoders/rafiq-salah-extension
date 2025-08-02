@@ -52,18 +52,40 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     
     if (alarm.name === 'dailyUpdate') {
         await updatePrayerTimesDaily();
+        // Also clean up old postponed reminders daily
+        await cleanupOldPostponedReminders();
     } else if (alarm.name.startsWith('prayer_')) {
         await handlePrayerReminder(alarm.name);
         // Set up alarm for next day for this prayer
         await setupNextDayAlarm(alarm.name);
     } else if (alarm.name.startsWith('snooze_')) {
-        chrome.notifications.create(`snooze_reminder_${Date.now()}`, {
+        const notificationId = `snooze_reminder_${Date.now()}`;
+        chrome.notifications.create(notificationId, {
             type: 'basic',
             iconUrl: 'icon.png',
             title: 'تذكير مؤجل 🔔',
             message: 'تذكير: حان وقت الصلاة',
-            priority: 2
+            priority: 2,
+            requireInteraction: true,
+            buttons: [
+                { title: 'تم' },
+                { title: 'تأجيل 5 دقائق' }
+            ]
         });
+        
+        // Auto-clear after 2 minutes if not interacted with
+        setTimeout(() => {
+            chrome.notifications.clear(notificationId);
+        }, 120000);
+        
+        // Clean up this postponed reminder from storage
+        const postponedReminders = await chrome.storage.local.get(['postponedReminders']);
+        if (postponedReminders.postponedReminders) {
+            const updatedReminders = postponedReminders.postponedReminders.filter(
+                reminder => reminder.id !== alarm.name
+            );
+            await chrome.storage.local.set({ postponedReminders: updatedReminders });
+        }
     }
 });
 
@@ -395,9 +417,22 @@ chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIn
         chrome.notifications.clear(notificationId);
         
         const snoozeTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
-        chrome.alarms.create(`snooze_${Date.now()}`, {
+        const snoozeId = `snooze_${Date.now()}`;
+        
+        chrome.alarms.create(snoozeId, {
             when: snoozeTime.getTime()
         });
+        
+        // Store postponed reminder info for restoration after browser restart
+        const postponedReminders = await chrome.storage.local.get(['postponedReminders']) || { postponedReminders: [] };
+        const reminders = postponedReminders.postponedReminders || [];
+        reminders.push({
+            id: snoozeId,
+            scheduledTime: snoozeTime.getTime(),
+            createdAt: Date.now()
+        });
+        
+        await chrome.storage.local.set({ postponedReminders: reminders });
         
         // Show confirmation
         chrome.notifications.create(`snooze_confirm_${Date.now()}`, {
@@ -416,9 +451,86 @@ chrome.runtime.onStartup.addListener(async () => {
     await restoreAlarmsOnStartup();
 });
 
+// Clean up old postponed reminders (older than 24 hours)
+async function cleanupOldPostponedReminders() {
+    try {
+        const postponedReminders = await chrome.storage.local.get(['postponedReminders']);
+        if (!postponedReminders.postponedReminders) return;
+        
+        const now = Date.now();
+        const validReminders = postponedReminders.postponedReminders.filter(reminder => {
+            const age = now - reminder.createdAt;
+            return age < 24 * 60 * 60 * 1000; // Keep reminders younger than 24 hours
+        });
+        
+        await chrome.storage.local.set({ postponedReminders: validReminders });
+    } catch (error) {
+        // Silent error handling
+    }
+}
+
+// Restore postponed reminders that should still fire
+async function restorePostponedReminders() {
+    try {
+        const postponedReminders = await chrome.storage.local.get(['postponedReminders']);
+        if (!postponedReminders.postponedReminders) return;
+        
+        const now = Date.now();
+        const validReminders = [];
+        
+        for (const reminder of postponedReminders.postponedReminders) {
+            // Only restore reminders that are:
+            // 1. Still in the future OR 
+            // 2. Less than 10 minutes in the past (in case browser was closed briefly)
+            const timeDiff = reminder.scheduledTime - now;
+            if (timeDiff > -10 * 60 * 1000) { // -10 minutes in milliseconds
+                if (timeDiff > 0) {
+                    // Future reminder - restore the alarm
+                    chrome.alarms.create(reminder.id, {
+                        when: reminder.scheduledTime
+                    });
+                    validReminders.push(reminder);
+                } else {
+                    // Past reminder within 10 minutes - fire immediately
+                    const lateNotificationId = `late_snooze_reminder_${Date.now()}`;
+                    chrome.notifications.create(lateNotificationId, {
+                        type: 'basic',
+                        iconUrl: 'icon.png',
+                        title: 'تذكير مؤجل 🔔',
+                        message: 'تذكير: حان وقت الصلاة',
+                        priority: 2,
+                        requireInteraction: true,
+                        buttons: [
+                            { title: 'تم' },
+                            { title: 'تأجيل 5 دقائق' }
+                        ]
+                    });
+                    
+                    // Auto-clear after 2 minutes if not interacted with
+                    setTimeout(() => {
+                        chrome.notifications.clear(lateNotificationId);
+                    }, 120000);
+                    
+                    // Don't add to validReminders as it's been fired
+                }
+            }
+            // Reminders older than 10 minutes are discarded
+        }
+        
+        // Update storage with only valid reminders
+        await chrome.storage.local.set({ postponedReminders: validReminders });
+        
+    } catch (error) {
+        // Silent error handling
+    }
+}
+
 // Restore alarms when service worker wakes up
 async function restoreAlarmsOnStartup() {
     try {
+        // First restore postponed reminders
+        await restorePostponedReminders();
+        
         // Clear old prayer alarms and set up fresh ones
         const result = await chrome.storage.local.get([
             'prayerTimes', 
