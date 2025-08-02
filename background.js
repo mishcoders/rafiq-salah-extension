@@ -52,24 +52,26 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     
     if (alarm.name === 'dailyUpdate') {
         await updatePrayerTimesDaily();
-        // Also clean up old postponed reminders daily
+        // Also clean up old postponed reminders and postpone tracker daily
         await cleanupOldPostponedReminders();
+        await cleanupOldPostponeTracker();
     } else if (alarm.name.startsWith('prayer_')) {
         await handlePrayerReminder(alarm.name);
         // Set up alarm for next day for this prayer
         await setupNextDayAlarm(alarm.name);
     } else if (alarm.name.startsWith('snooze_')) {
         const notificationId = `snooze_reminder_${Date.now()}`;
+        
+        // This is a postponed reminder - show notification without postpone button
         chrome.notifications.create(notificationId, {
             type: 'basic',
             iconUrl: 'icon.png',
             title: 'تذكير مؤجل 🔔',
-            message: 'تذكير: حان وقت الصلاة',
+            message: 'تذكير: حان وقت الصلاة (لا يمكن التأجيل مرة أخرى)',
             priority: 2,
             requireInteraction: true,
             buttons: [
-                { title: 'تم' },
-                { title: 'تأجيل 5 دقائق' }
+                { title: 'تم' }
             ]
         });
         
@@ -362,6 +364,34 @@ chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIn
         // "تأجيل 5 دقائق" button - set snooze alarm
         chrome.notifications.clear(notificationId);
         
+        // Check if this notification has already been postponed
+        const postponeTracker = await chrome.storage.local.get(['postponeTracker']) || { postponeTracker: {} };
+        const tracker = postponeTracker.postponeTracker || {};
+        
+        // Create a unique key for this prayer time (based on current hour to group same prayer reminders)
+        const now = new Date();
+        const currentHour = now.getHours();
+        const trackingKey = `prayer_${currentHour}_${now.toDateString()}`;
+        
+        // Check if this prayer reminder has already been postponed
+        if (tracker[trackingKey]) {
+            // Already postponed once, show message and don't allow another postponement
+            chrome.notifications.create(`no_more_postpone_${Date.now()}`, {
+                type: 'basic',
+                iconUrl: 'icon.png',
+                title: 'لا يمكن التأجيل مرة أخرى',
+                message: 'تم تأجيل هذا التذكير مسبقاً. حان وقت الصلاة الآن.'
+            });
+            return;
+        }
+        
+        // Mark this prayer as postponed
+        tracker[trackingKey] = {
+            postponedAt: Date.now(),
+            count: 1
+        };
+        await chrome.storage.local.set({ postponeTracker: tracker });
+        
         const snoozeTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
         const snoozeId = `snooze_${Date.now()}`;
         
@@ -375,7 +405,8 @@ chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIn
         reminders.push({
             id: snoozeId,
             scheduledTime: snoozeTime.getTime(),
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            trackingKey: trackingKey // Store tracking key for cleanup
         });
         
         await chrome.storage.local.set({ postponedReminders: reminders });
@@ -385,7 +416,7 @@ chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIn
             type: 'basic',
             iconUrl: 'icon.png',
             title: 'تم التأجيل',
-            message: 'سيتم تذكيرك مرة أخرى خلال 5 دقائق'
+            message: 'سيتم تذكيرك مرة أخرى خلال 5 دقائق (لمرة واحدة فقط)'
         });
     }
 });
@@ -415,6 +446,30 @@ async function cleanupOldPostponedReminders() {
     }
 }
 
+// Clean up old postpone tracker entries (older than 24 hours)
+async function cleanupOldPostponeTracker() {
+    try {
+        const postponeTracker = await chrome.storage.local.get(['postponeTracker']);
+        if (!postponeTracker.postponeTracker) return;
+        
+        const now = Date.now();
+        const tracker = postponeTracker.postponeTracker;
+        const cleanedTracker = {};
+        
+        // Remove entries older than 24 hours
+        for (const [key, value] of Object.entries(tracker)) {
+            const age = now - value.postponedAt;
+            if (age < 24 * 60 * 60 * 1000) { // Keep entries younger than 24 hours
+                cleanedTracker[key] = value;
+            }
+        }
+        
+        await chrome.storage.local.set({ postponeTracker: cleanedTracker });
+    } catch (error) {
+        // Silent error handling
+    }
+}
+
 // Restore postponed reminders that should still fire
 async function restorePostponedReminders() {
     try {
@@ -437,18 +492,17 @@ async function restorePostponedReminders() {
                     });
                     validReminders.push(reminder);
                 } else {
-                    // Past reminder within 10 minutes - fire immediately
+                    // Past reminder within 10 minutes - fire immediately without postpone button
                     const lateNotificationId = `late_snooze_reminder_${Date.now()}`;
                     chrome.notifications.create(lateNotificationId, {
                         type: 'basic',
                         iconUrl: 'icon.png',
                         title: 'تذكير مؤجل 🔔',
-                        message: 'تذكير: حان وقت الصلاة',
+                        message: 'تذكير: حان وقت الصلاة (لا يمكن التأجيل مرة أخرى)',
                         priority: 2,
                         requireInteraction: true,
                         buttons: [
-                            { title: 'تم' },
-                            { title: 'تأجيل 5 دقائق' }
+                            { title: 'تم' }
                         ]
                     });
                     
