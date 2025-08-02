@@ -19,7 +19,9 @@
         background: transparent;
         min-height: 520px;
         padding: 24px;
+        padding-top: 60px;
         backdrop-filter: blur(10px);
+        position: relative;
       }
 
       .header {
@@ -223,11 +225,27 @@
       }
 
       .countdown {
-        font-size: 24px;
+        font-size: 16px;
         color: rgb(74, 140, 232);
-        font-weight: 700;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        letter-spacing: 0.5px;
+        font-weight: 500;
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        background: rgba(30, 41, 59, 0.8);
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(209, 166, 123, 0.2);
+        backdrop-filter: blur(8px);
+        z-index: 10;
+      }
+
+      .countdown-time {
+        color: rgb(74, 140, 232);
+        font-weight: 600;
+        font-size: 20px;
+        display: block;
+        margin-top: 8px;
+        text-align: center;
       }
 
       .controls {

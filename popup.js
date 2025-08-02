@@ -250,13 +250,13 @@ function updatePrayerDisplay() {
     
     let timeText = '';
     if (hours > 0) {
-        timeText = `بعد ${hours} ساعة و${minutes} دقيقة`;
+        timeText = `${hours} ساعة و${minutes} دقيقة`;
     } else {
-        timeText = `بعد ${minutes} دقيقة`;
+        timeText = `${minutes} دقيقة`;
     }
     
     const formattedTime = formatTo12Hour(nextPrayer.timeStr);
-    nextPrayerText.textContent = `🕌 الصلاة القادمة: ${PRAYER_NAMES[nextPrayer.name]} في ${formattedTime} (${timeText})`;
+    nextPrayerText.innerHTML = `🕌 الصلاة القادمة: ${PRAYER_NAMES[nextPrayer.name]} في ${formattedTime}<br><span class="countdown-time">${timeText}</span>`;
 }
 
 function timeToMinutes(timeStr) {

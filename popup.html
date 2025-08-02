@@ -9,6 +9,7 @@
   <body>
     <div class="container">
       <div class="header">
+        <div class="countdown" id="countdownText"></div>
         <h1>🕌 رفيق الصلاة</h1>
       </div>
 
@@ -21,15 +22,13 @@
       <!-- Location Selection -->
       <div id="locationSelection" class="selection-section">
         <h3>تغيير الموقع</h3>
-        
+
         <div class="select-container">
           <label for="countrySelect">الدولة</label>
           <select id="countrySelect">
             <option value="">اختر دولة</option>
           </select>
         </div>
-
-
 
         <div class="select-container">
           <label for="citySelect">المدينة</label>
@@ -49,7 +48,6 @@
           <div class="next-prayer" id="nextPrayerText">
             🕌 الصلاة القادمة: العصر بعد ساعة و23 دقيقة
           </div>
-          <div class="countdown" id="countdownText"></div>
         </div>
 
         <div class="controls">
@@ -88,9 +86,7 @@
                   <option value="10">قطر</option>
                 </select>
               </div>
-              <small>
-                💡 الاختيار التلقائي يحدد أفضل طريقة حساب لدولتك
-              </small>
+              <small> 💡 الاختيار التلقائي يحدد أفضل طريقة حساب لدولتك </small>
             </div>
 
             <button class="btn btn-primary" id="saveSettings">
