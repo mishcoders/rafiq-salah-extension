@@ -1,5 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
 
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: linear-gradient(135deg, rgb(15, 23, 42) 0%, rgb(20, 28, 47) 100%);
+        border: none;
+        outline: none;
+      }
+
       body {
         width: 420px;
         min-height: 520px;
@@ -13,15 +23,20 @@
         font-feature-settings: 'liga' 1, 'kern' 1;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        border: none;
+        outline: none;
+        overflow-x: hidden;
       }
 
       .container {
         background: transparent;
         min-height: 520px;
         padding: 24px;
-        padding-top: 60px;
+        padding-top: 20px;
         backdrop-filter: blur(10px);
         position: relative;
+        border: none;
+        outline: none;
       }
 
       .header {
@@ -115,19 +130,21 @@
         align-items: center;
         justify-content: space-between;
         white-space: nowrap;
-        padding: 10px 16px;
+        padding: 14px 20px;
         border: 1px solid rgba(209, 166, 123, 0.3);
-        border-radius: 6px;
-        background: rgb(30, 41, 59);
-        color: #e2e8f0;
-        font-size: 14px;
+        border-radius: 12px;
+        background: rgba(30, 41, 59, 0.9);
+        color: #f8fafc;
+        font-size: 15px;
         font-weight: 500;
         direction: rtl;
         appearance: none;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s ease;
         ring-offset-background: 2px;
-        height: 40px;
+        height: 48px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(8px);
       }
 
       select:focus {
@@ -138,6 +155,7 @@
 
       select:hover {
         background: rgba(209, 166, 123, 0.1);
+        border-color: rgba(209, 166, 123, 0.5);
         color: rgb(209, 166, 123);
       }
 
@@ -148,16 +166,16 @@
 
       /* Dark mode dropdown options */
       select option {
-        background: rgb(30, 41, 59);
-        color: #e2e8f0;
+        background: rgb(30, 41, 59) !important;
+        color: #e2e8f0 !important;
         padding: 12px 16px;
         border: none;
       }
 
       select option:checked,
       select option:hover {
-        background: rgb(209, 166, 123);
-        color: #1a1a1a;
+        background: rgb(209, 166, 123) !important;
+        color: #1a1a1a !important;
         font-weight: 600;
       }
 
@@ -185,7 +203,7 @@
         content: "";
         position: absolute;
         left: 16px;
-        bottom: 12px;
+        bottom: 16px;
         width: 16px;
         height: 16px;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a0aec0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 15 5 5 5-5'%3E%3C/path%3E%3Cpath d='m7 9 5-5 5 5'%3E%3C/path%3E%3C/svg%3E");
@@ -228,15 +246,14 @@
         font-size: 16px;
         color: rgb(74, 140, 232);
         font-weight: 500;
-        position: absolute;
-        top: 16px;
-        left: 16px;
         background: rgba(30, 41, 59, 0.8);
-        padding: 8px 12px;
-        border-radius: 8px;
+        padding: 8px 16px;
+        border-radius: 12px;
         border: 1px solid rgba(209, 166, 123, 0.2);
         backdrop-filter: blur(8px);
-        z-index: 10;
+        text-align: center;
+        margin-top: 12px;
+        display: inline-block;
       }
 
       .countdown-time {
@@ -246,6 +263,16 @@
         display: block;
         margin-top: 8px;
         text-align: center;
+      }
+
+      .calculation-method {
+        font-size: 12px;
+        color: rgba(209, 166, 123, 0.8);
+        font-weight: 400;
+        text-align: center;
+        margin-top: 8px;
+        line-height: 1.4;
+        opacity: 0.9;
       }
 
       .controls {
@@ -382,4 +409,56 @@
         display: block;
         line-height: 1.5;
         letter-spacing: 0.1px;
+      }
+
+      /* Custom Scrollbar for entire app */
+      body::-webkit-scrollbar {
+        width: 12px;
+        background: transparent;
+      }
+
+      body::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.8);
+        border-radius: 0;
+        border: none;
+      }
+
+      body::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, rgba(209, 166, 123, 0.8) 0%, rgba(209, 166, 123, 0.6) 100%);
+        border-radius: 0;
+        border: 2px solid rgba(15, 23, 42, 0.8);
+      }
+
+      body::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, rgb(209, 166, 123) 0%, rgba(209, 166, 123, 0.8) 100%);
+      }
+
+      body::-webkit-scrollbar-corner {
+        background: rgba(15, 23, 42, 0.8);
+      }
+
+      /* Custom Scrollbar for container */
+      .container::-webkit-scrollbar {
+        width: 8px;
+        background: transparent;
+      }
+
+      .container::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.6);
+        border-radius: 0;
+        border: none;
+      }
+
+      .container::-webkit-scrollbar-thumb {
+        background: rgba(209, 166, 123, 0.6);
+        border-radius: 0;
+        border: 1px solid rgba(15, 23, 42, 0.6);
+      }
+
+      .container::-webkit-scrollbar-thumb:hover {
+        background: rgba(209, 166, 123, 0.8);
+      }
+
+      .container::-webkit-scrollbar-corner {
+        background: rgba(15, 23, 42, 0.6);
       }

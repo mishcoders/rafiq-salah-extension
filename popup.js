@@ -31,10 +31,23 @@ const countryMethodMap = {
     'TN': 7   // Tunisia
 };
 
+// Calculation method names in Arabic
+const CALCULATION_METHODS = {
+    'auto': 'اختيار تلقائي',
+    '2': 'الجمعية الإسلامية لأمريكا الشمالية',
+    '3': 'رابطة العالم الإسلامي',
+    '4': 'جامعة أم القرى',
+    '5': 'الهيئة المصرية للمساحة',
+    '7': 'جامعة العلوم التطبيقية، كراتشي',
+    '8': 'معهد الجيوفيزياء، طهران',
+    '9': 'الخليج العربي',
+    '10': 'قطر'
+};
+
 // DOM elements
 let countrySelect, citySelect, saveLocationBtn, locationDisplay, locationText, editLocationBtn;
 let locationSelection, prayerTimesSection, loadingState, errorState;
-let nextPrayerText, countdownText, reminderToggle;
+let nextPrayerText, countdownText, reminderToggle, calculationMethodText;
 
 // Global variables
 let citiesData = [];
@@ -64,6 +77,7 @@ function initializeElements() {
     nextPrayerText = document.getElementById('nextPrayerText');
     countdownText = document.getElementById('countdownText');
     reminderToggle = document.getElementById('reminderToggle');
+    calculationMethodText = document.getElementById('calculationMethodText');
     settingsToggle = document.getElementById('settingsToggle');
     reminderSettings = document.getElementById('reminderSettings');
     reminderTimeSelect = document.getElementById('reminderTime');
@@ -240,10 +254,10 @@ function updatePrayerDisplay() {
     const hours = Math.floor(timeUntil / 60);
     const minutes = timeUntil % 60;
     
-    // Convert 24-hour time to 12-hour AM/PM format
+    // Convert 24-hour time to 12-hour AM/PM format with Arabic indicators
     function formatTo12Hour(timeStr) {
         const [hours, minutes] = timeStr.split(':').map(Number);
-        const period = hours >= 12 ? 'PM' : 'AM';
+        const period = hours >= 12 ? 'م' : 'ص'; // م for مساء (evening), ص for صباح (morning)
         const displayHours = hours % 12 || 12;
         return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
     }
@@ -257,6 +271,9 @@ function updatePrayerDisplay() {
     
     const formattedTime = formatTo12Hour(nextPrayer.timeStr);
     nextPrayerText.innerHTML = `🕌 الصلاة القادمة: ${PRAYER_NAMES[nextPrayer.name]} في ${formattedTime}<br><span class="countdown-time">${timeText}</span>`;
+    
+    // Update calculation method display
+    updateCalculationMethodDisplay();
 }
 
 function timeToMinutes(timeStr) {
@@ -278,12 +295,29 @@ function startCountdown() {
 function updateCountdownDisplay() {
     const now = new Date();
     const timeStr = now.toLocaleTimeString('ar-SA', { 
-        hour12: false,
+        hour12: true,
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit'
-    });
+    }).replace(/AM/g, 'ص').replace(/PM/g, 'م');
     countdownText.textContent = `الوقت الحالي: ${timeStr}`;
+}
+
+async function updateCalculationMethodDisplay() {
+    const result = await chrome.storage.local.get(['calculationMethod', 'selectedCountry']);
+    const currentMethod = result.calculationMethod || 'auto';
+    
+    let methodName;
+    if (currentMethod === 'auto' && result.selectedCountry) {
+        const autoMethodId = countryMethodMap[result.selectedCountry] || 2;
+        methodName = `${CALCULATION_METHODS['auto']} (${CALCULATION_METHODS[autoMethodId.toString()]})`;
+    } else {
+        methodName = CALCULATION_METHODS[currentMethod] || CALCULATION_METHODS['auto'];
+    }
+    
+    if (calculationMethodText) {
+        calculationMethodText.textContent = `طريقة الحساب: ${methodName}`;
+    }
 }
 
 async function updateReminderToggle() {
@@ -366,6 +400,9 @@ function setupEventListeners() {
         if (result.selectedCountry && result.selectedCity) {
             await loadPrayerTimes(result.selectedCountry, result.selectedCity);
         }
+        
+        // Update calculation method display
+        updateCalculationMethodDisplay();
         
         // Hide settings panel
         reminderSettings.classList.add('hidden');
