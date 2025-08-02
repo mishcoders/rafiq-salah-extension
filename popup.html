@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>مواقيت الصلاة</title>
+    <style>
+      body {
+        width: 400px;
+        min-height: 500px;
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #1a2332 0%, #2d3748 100%);
+        color: white;
+        direction: rtl;
+      }
+
+      .container {
+        background: #1a2332;
+        min-height: 500px;
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 10px 0;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+        color: #4a9eff;
+      }
+
+      .location-section {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 25px;
+        padding: 12px 16px;
+        background: #2d3748;
+        border-radius: 12px;
+        border: 1px solid #4a5568;
+      }
+
+      .location-text {
+        font-size: 14px;
+        font-weight: 500;
+        color: #e2e8f0;
+      }
+
+      .edit-btn {
+        background: #4a9eff;
+        border: none;
+        color: white;
+        font-size: 14px;
+        cursor: pointer;
+        padding: 6px 12px;
+        border-radius: 8px;
+        transition: all 0.3s;
+        font-weight: 500;
+      }
+
+      .edit-btn:hover {
+        background: #3182ce;
+        transform: translateY(-1px);
+      }
+
+      .selection-section {
+        margin-bottom: 25px;
+      }
+
+      .selection-section h3 {
+        margin: 0 0 20px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #e2e8f0;
+        text-align: center;
+      }
+
+      .select-container {
+        position: relative;
+        margin-bottom: 15px;
+      }
+
+      .select-container label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #a0aec0;
+      }
+
+      select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #4a5568;
+        border-radius: 12px;
+        background: #2d3748;
+        color: #e2e8f0;
+        font-size: 14px;
+        direction: rtl;
+        appearance: none;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      select:focus {
+        outline: none;
+        border-color: #4a9eff;
+        box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+      }
+
+      select:hover {
+        border-color: #718096;
+      }
+
+      .select-container::after {
+        content: "▼";
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #a0aec0;
+        pointer-events: none;
+        font-size: 12px;
+      }
+
+
+
+      .prayer-info {
+        text-align: center;
+        margin: 20px 0;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+      }
+
+      .next-prayer {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+
+      .countdown {
+        font-size: 18px;
+        color: #ffd700;
+        font-weight: bold;
+      }
+
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .btn {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+      }
+
+      .btn-primary {
+        background: #4a9eff;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #3182ce;
+        transform: translateY(-1px);
+      }
+
+      .btn-primary:disabled {
+        background: #4a5568;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-danger {
+        background: #f56565;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #e53e3e;
+        transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+        background: #2d3748;
+        color: #e2e8f0;
+        border: 1px solid #4a5568;
+      }
+
+      .btn-secondary:hover {
+        background: #4a5568;
+        transform: translateY(-1px);
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        font-size: 16px;
+      }
+
+      .error {
+        color: #ffcccb;
+        text-align: center;
+        padding: 10px;
+        background: rgba(255, 0, 0, 0.2);
+        border-radius: 8px;
+        margin: 10px 0;
+      }
+
+      .reminder-settings {
+        background: #2d3748;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 15px 0;
+        border: 1px solid #4a5568;
+      }
+
+      .reminder-settings h4 {
+        margin: 0 0 20px 0;
+        font-size: 16px;
+        color: #4a9eff;
+        font-weight: 600;
+      }
+
+      .setting-group {
+        margin-bottom: 20px;
+      }
+
+      .setting-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #a0aec0;
+      }
+
+      .setting-group small {
+        color: #4a9eff;
+        font-size: 12px;
+        margin-top: 8px;
+        display: block;
+        line-height: 1.4;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🕌 مواقيت الصلاة</h1>
+      </div>
+
+      <!-- Location Display -->
+      <div id="locationDisplay" class="location-section hidden">
+        <div class="location-text" id="locationText"></div>
+        <button class="edit-btn" id="editLocationBtn">تغيير</button>
+      </div>
+
+      <!-- Location Selection -->
+      <div id="locationSelection" class="selection-section">
+        <h3>تغيير الموقع</h3>
+        
+        <div class="select-container">
+          <label for="countrySelect">الدولة</label>
+          <select id="countrySelect">
+            <option value="">اختر دولة</option>
+          </select>
+        </div>
+
+
+
+        <div class="select-container">
+          <label for="citySelect">المدينة</label>
+          <select id="citySelect" disabled>
+            <option value="">اختر المدينة</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary" id="saveLocationBtn" disabled>
+          حفظ الموقع
+        </button>
+      </div>
+
+      <!-- Prayer Times Display -->
+      <div id="prayerTimesSection" class="hidden">
+        <div class="prayer-info">
+          <div class="next-prayer" id="nextPrayerText">
+            🕌 الصلاة القادمة: العصر بعد ساعة و23 دقيقة
+          </div>
+          <div class="countdown" id="countdownText"></div>
+        </div>
+
+        <div class="controls">
+          <button class="btn btn-primary" id="reminderToggle">
+            🔔 تفعيل التذكير
+          </button>
+
+          <!-- Reminder Settings -->
+          <div id="reminderSettings" class="reminder-settings hidden">
+            <h4>إعدادات التذكير:</h4>
+            <div class="setting-group">
+              <label for="reminderTime">التذكير قبل الصلاة بـ:</label>
+              <div class="select-container">
+                <select id="reminderTime">
+                  <option value="1">دقيقة واحدة</option>
+                  <option value="5" selected>5 دقائق</option>
+                  <option value="10">10 دقائق</option>
+                  <option value="15">15 دقيقة</option>
+                  <option value="30">30 دقيقة</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="setting-group">
+              <label for="calculationMethod">طريقة الحساب:</label>
+              <div class="select-container">
+                <select id="calculationMethod">
+                  <option value="auto">اختيار تلقائي (موصى به)</option>
+                  <option value="2">الجمعية الإسلامية لأمريكا الشمالية</option>
+                  <option value="3">رابطة العالم الإسلامي</option>
+                  <option value="4">جامعة أم القرى (السعودية)</option>
+                  <option value="5">الهيئة المصرية العامة للمساحة</option>
+                  <option value="7">جامعة العلوم التطبيقية، كراتشي</option>
+                  <option value="8">معهد الجيوفيزياء، جامعة طهران</option>
+                  <option value="9">الخليج العربي</option>
+                  <option value="10">قطر</option>
+                </select>
+              </div>
+              <small>
+                💡 الاختيار التلقائي يحدد أفضل طريقة حساب لدولتك
+              </small>
+            </div>
+
+            <button class="btn btn-primary" id="saveSettings">
+              حفظ الإعدادات
+            </button>
+          </div>
+
+          <button class="btn btn-secondary" id="settingsToggle">
+            ⚙️ إعدادات التذكير
+          </button>
+          <button class="btn btn-secondary" id="testNotification">
+            🔔 اختبار التنبيه
+          </button>
+          <a
+            href="https://rafiq-salah.vercel.app"
+            target="_blank"
+            class="btn btn-secondary"
+            >📅 عرض جميع المواقيت</a
+          >
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingState" class="loading hidden">
+        جاري تحميل مواقيت الصلاة...
+      </div>
+
+      <!-- Error State -->
+      <div id="errorState" class="error hidden"></div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
