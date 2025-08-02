@@ -53,7 +53,7 @@ let nextPrayerText, countdownText, reminderToggle, calculationMethodText;
 let citiesData = [];
 let currentPrayerTimes = null;
 let countdownInterval = null;
-let settingsToggle, reminderSettings, reminderTimeSelect, calculationMethodSelect, saveSettingsBtn, testNotificationBtn;
+let settingsToggle, reminderSettings, reminderTimeSelect, calculationMethodSelect, saveSettingsBtn;
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
@@ -83,7 +83,7 @@ function initializeElements() {
     reminderTimeSelect = document.getElementById('reminderTime');
     calculationMethodSelect = document.getElementById('calculationMethod');
     saveSettingsBtn = document.getElementById('saveSettings');
-    testNotificationBtn = document.getElementById('testNotification');
+
 }
 
 async function loadCitiesData() {
@@ -412,39 +412,6 @@ function setupEventListeners() {
         setTimeout(() => {
             hideError();
         }, 2000);
-    });
-    
-    testNotificationBtn.addEventListener('click', async () => {
-        // Show immediate feedback
-        showError('جاري إرسال تنبيه تجريبي...');
-        
-        try {
-            // Send test notification request to background script
-            chrome.runtime.sendMessage({ action: 'testNotification' });
-            
-            // Check notification permission
-            const permission = await chrome.notifications.getPermissionLevel();
-            
-            if (permission === 'denied') {
-                showError('❌ الإشعارات مرفوضة. يرجى تفعيلها من إعدادات المتصفح');
-                setTimeout(() => {
-                    hideError();
-                }, 5000);
-                return;
-            }
-            
-            // Show success message
-            showError('✅ تم إرسال تنبيه تجريبي - تحقق من الإشعارات');
-            setTimeout(() => {
-                hideError();
-            }, 3000);
-            
-        } catch (error) {
-            showError('❌ خطأ في إرسال التنبيه التجريبي');
-            setTimeout(() => {
-                hideError();
-            }, 3000);
-        }
     });
     
 

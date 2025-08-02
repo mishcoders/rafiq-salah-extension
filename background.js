@@ -98,66 +98,12 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         case 'toggleReminder':
             await handleReminderToggle(request.enabled);
             break;
-        case 'testNotification':
-            await testNotification();
-            break;
+
 
 
     }
     return true; // Keep message channel open for async response
 });
-
-// Test notification function
-async function testNotification() {
-    try {
-        const permission = await chrome.notifications.getPermissionLevel();
-        
-        if (permission === 'denied') {
-            // Try to show a basic notification anyway
-            try {
-                await chrome.notifications.create(`fallback_test_${Date.now()}`, {
-                    type: 'basic',
-                    iconUrl: 'icon.png',
-                    title: 'تنبيه',
-                    message: 'يرجى تفعيل الإشعارات في إعدادات المتصفح'
-                });
-            } catch (fallbackError) {
-                // Silent error handling
-            }
-            return;
-        }
-        
-        const notificationId = `test_${Date.now()}`;
-        
-        await chrome.notifications.create(notificationId, {
-            type: 'basic',
-            iconUrl: 'icon.png',
-            title: 'اختبار التنبيه 🔔',
-            message: 'هذا اختبار للتأكد من عمل التنبيهات - إذا رأيت هذه الرسالة فالتنبيهات تعمل بشكل صحيح!',
-            priority: 2,
-            requireInteraction: false
-        });
-        
-        // Auto-clear after 8 seconds
-        setTimeout(() => {
-            chrome.notifications.clear(notificationId);
-        }, 8000);
-        
-    } catch (error) {
-        // Try the most basic notification possible
-        try {
-            await chrome.notifications.create(`basic_test_${Date.now()}`, {
-                type: 'basic',
-                iconUrl: 'icon.png',
-                title: 'تنبيه بسيط',
-                message: 'اختبار أساسي'
-            });
-        } catch (basicError) {
-            // Silent error handling
-        }
-    }
-}
-
 
 
 // Set up alarm for next day
