@@ -19,7 +19,7 @@ chrome.runtime.onInstalled.addListener(async () => {
             await chrome.notifications.create('welcome', {
                 type: 'basic',
                 iconUrl: 'icon.png',
-                title: 'مرحباً بك في مواقيت الصلاة 🕌',
+                title: 'مرحباً بك في رفيق الصلاة  🕌',
                 message: 'تم تثبيت الإكستنشن بنجاح. اختر موقعك لبدء التذكير.',
                 priority: 1
             });

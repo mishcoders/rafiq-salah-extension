@@ -201,7 +201,7 @@ async function loadPrayerTimes(countryCode, cityName) {
             throw new Error('Invalid API response');
         }
     } catch (error) {
-        showError('خطأ في تحميل مواقيت الصلاة. يرجى المحاولة مرة أخرى.');
+        showError('خطأ في تحميل رفيق الصلاة. يرجى المحاولة مرة أخرى.');
     } finally {
         showLoading(false);
     }
@@ -215,11 +215,11 @@ function updatePrayerDisplay() {
     
     // Prayer times in minutes from midnight
     const prayers = [
-        { name: 'Fajr', time: timeToMinutes(currentPrayerTimes.Fajr) },
-        { name: 'Dhuhr', time: timeToMinutes(currentPrayerTimes.Dhuhr) },
-        { name: 'Asr', time: timeToMinutes(currentPrayerTimes.Asr) },
-        { name: 'Maghrib', time: timeToMinutes(currentPrayerTimes.Maghrib) },
-        { name: 'Isha', time: timeToMinutes(currentPrayerTimes.Isha) }
+        { name: 'Fajr', time: timeToMinutes(currentPrayerTimes.Fajr), timeStr: currentPrayerTimes.Fajr },
+        { name: 'Dhuhr', time: timeToMinutes(currentPrayerTimes.Dhuhr), timeStr: currentPrayerTimes.Dhuhr },
+        { name: 'Asr', time: timeToMinutes(currentPrayerTimes.Asr), timeStr: currentPrayerTimes.Asr },
+        { name: 'Maghrib', time: timeToMinutes(currentPrayerTimes.Maghrib), timeStr: currentPrayerTimes.Maghrib },
+        { name: 'Isha', time: timeToMinutes(currentPrayerTimes.Isha), timeStr: currentPrayerTimes.Isha }
     ];
     
     // Find next prayer
@@ -233,12 +233,20 @@ function updatePrayerDisplay() {
     
     // If no prayer found today, next prayer is Fajr tomorrow
     if (!nextPrayer) {
-        nextPrayer = { name: 'Fajr', time: prayers[0].time + 24 * 60 };
+        nextPrayer = { name: 'Fajr', time: prayers[0].time + 24 * 60, timeStr: currentPrayerTimes.Fajr };
     }
     
     const timeUntil = nextPrayer.time - currentTime;
     const hours = Math.floor(timeUntil / 60);
     const minutes = timeUntil % 60;
+    
+    // Convert 24-hour time to 12-hour AM/PM format
+    function formatTo12Hour(timeStr) {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    }
     
     let timeText = '';
     if (hours > 0) {
@@ -247,7 +255,8 @@ function updatePrayerDisplay() {
         timeText = `بعد ${minutes} دقيقة`;
     }
     
-    nextPrayerText.textContent = `🕌 الصلاة القادمة: ${PRAYER_NAMES[nextPrayer.name]} ${timeText}`;
+    const formattedTime = formatTo12Hour(nextPrayer.timeStr);
+    nextPrayerText.textContent = `🕌 الصلاة القادمة: ${PRAYER_NAMES[nextPrayer.name]} في ${formattedTime} (${timeText})`;
 }
 
 function timeToMinutes(timeStr) {

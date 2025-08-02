@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "مواقيت الصلاة",
+  "name": "رفيق الصلاة",
   "version": "2.3",
-  "description": "تطبيق مواقيت الصلاة للدول العربية مع تذكير قابل للتخصيص وطرق حساب متعددة",
+  "description": "تطبيق رفيق الصلاة للدول العربية مع تذكير قابل للتخصيص وطرق حساب متعددة",
   "permissions": [
     "storage",
     "alarms",
@@ -10,7 +10,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "مواقيت الصلاة",
+    "default_title": "رفيق الصلاة",
     "default_icon": {
       "16": "icon.png",
       "32": "icon.png",
