@@ -60,25 +60,30 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         // Set up alarm for next day for this prayer
         await setupNextDayAlarm(alarm.name);
     } else if (alarm.name.startsWith('snooze_')) {
-        const notificationId = `snooze_reminder_${Date.now()}`;
+        // Validate if we should still show the postponed reminder
+        const shouldShow = await validateReminderTime();
         
-        // This is a postponed reminder - show notification without postpone button
-        chrome.notifications.create(notificationId, {
-            type: 'basic',
-            iconUrl: 'icon.png',
-            title: 'تذكير مؤجل 🔔',
-            message: 'تذكير: حان وقت الصلاة (لا يمكن التأجيل مرة أخرى)',
-            priority: 2,
-            requireInteraction: true,
-            buttons: [
-                { title: 'تم' }
-            ]
-        });
-        
-        // Auto-clear after 2 minutes if not interacted with
-        setTimeout(() => {
-            chrome.notifications.clear(notificationId);
-        }, 120000);
+        if (shouldShow) {
+            const notificationId = `snooze_reminder_${Date.now()}`;
+            
+            // This is a postponed reminder - show notification without postpone button
+            chrome.notifications.create(notificationId, {
+                type: 'basic',
+                iconUrl: 'icon.png',
+                title: 'تذكير مؤجل 🔔',
+                message: 'تذكير: حان وقت الصلاة (لا يمكن التأجيل مرة أخرى)',
+                priority: 2,
+                requireInteraction: true,
+                buttons: [
+                    { title: 'تم' }
+                ]
+            });
+            
+            // Auto-clear after 2 minutes if not interacted with
+            setTimeout(() => {
+                chrome.notifications.clear(notificationId);
+            }, 120000);
+        }
         
         // Clean up this postponed reminder from storage
         const postponedReminders = await chrome.storage.local.get(['postponedReminders']);
@@ -107,6 +112,45 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     return true; // Keep message channel open for async response
 });
 
+
+// Helper function to validate if we're still within a valid reminder window
+async function validateReminderTime() {
+    try {
+        const result = await chrome.storage.local.get(['prayerTimes', 'reminderTime']);
+        
+        if (!result.prayerTimes) {
+            return false;
+        }
+        
+        const reminderMinutes = result.reminderTime || 5;
+        const now = new Date();
+        const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+        
+        // Check all prayer times to see if we're within any valid reminder window
+        const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+        
+        for (const prayerName of prayers) {
+            if (result.prayerTimes[prayerName]) {
+                const prayerTimeStr = result.prayerTimes[prayerName];
+                const [hours, minutes] = prayerTimeStr.split(':').map(Number);
+                const prayerTimeMinutes = hours * 60 + minutes;
+                
+                // Calculate reminder window (reminderMinutes before prayer time)
+                const reminderStartMinutes = prayerTimeMinutes - reminderMinutes;
+                
+                // Check if current time is within the reminder window for this prayer
+                if (currentTimeMinutes >= reminderStartMinutes && currentTimeMinutes <= prayerTimeMinutes) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    } catch (error) {
+        // If there's an error, err on the side of not showing notifications
+        return false;
+    }
+}
 
 // Set up alarm for next day
 async function setupNextDayAlarm(alarmName) {
@@ -193,12 +237,32 @@ async function handlePrayerReminder(alarmName) {
     const arabicName = PRAYER_NAMES[prayerName];
     
     // Check if reminders are still enabled and get reminder time
-    const result = await chrome.storage.local.get(['reminderEnabled', 'reminderTime']);
+    const result = await chrome.storage.local.get(['reminderEnabled', 'reminderTime', 'prayerTimes']);
     const reminderEnabled = result.reminderEnabled !== false;
     const reminderMinutes = result.reminderTime || 5;
     
     if (!reminderEnabled) {
         return;
+    }
+    
+    // Validate if we're still within the reminder window
+    if (result.prayerTimes && result.prayerTimes[prayerName]) {
+        const now = new Date();
+        const prayerTimeStr = result.prayerTimes[prayerName];
+        const [hours, minutes] = prayerTimeStr.split(':').map(Number);
+        
+        // Create prayer time for today
+        const prayerTime = new Date();
+        prayerTime.setHours(hours, minutes, 0, 0);
+        
+        // Calculate the reminder window start time
+        const reminderStartTime = new Date(prayerTime.getTime() - reminderMinutes * 60 * 1000);
+        
+        // Check if current time is before the reminder window or after the prayer time
+        if (now < reminderStartTime || now > prayerTime) {
+            // We're outside the valid reminder window, don't send notification
+            return;
+        }
     }
     
     // Create appropriate message based on reminder time
@@ -492,26 +556,30 @@ async function restorePostponedReminders() {
                     });
                     validReminders.push(reminder);
                 } else {
-                    // Past reminder within 10 minutes - fire immediately without postpone button
-                    const lateNotificationId = `late_snooze_reminder_${Date.now()}`;
-                    chrome.notifications.create(lateNotificationId, {
-                        type: 'basic',
-                        iconUrl: 'icon.png',
-                        title: 'تذكير مؤجل 🔔',
-                        message: 'تذكير: حان وقت الصلاة (لا يمكن التأجيل مرة أخرى)',
-                        priority: 2,
-                        requireInteraction: true,
-                        buttons: [
-                            { title: 'تم' }
-                        ]
-                    });
+                    // Past reminder within 10 minutes - check if still valid before firing
+                    const shouldFire = await validateReminderTime();
                     
-                    // Auto-clear after 2 minutes if not interacted with
-                    setTimeout(() => {
-                        chrome.notifications.clear(lateNotificationId);
-                    }, 120000);
+                    if (shouldFire) {
+                        const lateNotificationId = `late_snooze_reminder_${Date.now()}`;
+                        chrome.notifications.create(lateNotificationId, {
+                            type: 'basic',
+                            iconUrl: 'icon.png',
+                            title: 'تذكير مؤجل 🔔',
+                            message: 'تذكير: حان وقت الصلاة (لا يمكن التأجيل مرة أخرى)',
+                            priority: 2,
+                            requireInteraction: true,
+                            buttons: [
+                                { title: 'تم' }
+                            ]
+                        });
+                        
+                        // Auto-clear after 2 minutes if not interacted with
+                        setTimeout(() => {
+                            chrome.notifications.clear(lateNotificationId);
+                        }, 120000);
+                    }
                     
-                    // Don't add to validReminders as it's been fired
+                    // Don't add to validReminders as it's been processed
                 }
             }
             // Reminders older than 10 minutes are discarded
