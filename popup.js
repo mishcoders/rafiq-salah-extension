@@ -390,9 +390,9 @@ async function loadPrayerTimes(countryCode, cityName) {
     hideError();
     
     try {
-        // Get current date and calculation method
+        // Get current date (use local date to avoid UTC offset issues)
         const today = new Date();
-        const dateStr = today.toISOString().split('T')[0];
+        const dateStr = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
         
         // Auto-detect calculation method based on country, fallback to user setting or default
         const settings = await chrome.storage.local.get(['calculationMethod']);
@@ -405,9 +405,11 @@ async function loadPrayerTimes(countryCode, cityName) {
             method = parseInt(settings.calculationMethod);
         }
         
-        // Fetch prayer times from Aladhan API
+        // Fetch prayer times from Aladhan API (include safe defaults for school/latitude adjustment)
+        const school = 0; // Shafi/Maliki/Hanbali default
+        const latitudeAdjustmentMethod = 'NONE';
         const response = await fetch(
-            `https://api.aladhan.com/v1/timingsByCity/${dateStr}?city=${encodeURIComponent(cityName)}&country=${countryCode}&method=${method}`
+            `https://api.aladhan.com/v1/timingsByCity/${dateStr}?city=${encodeURIComponent(cityName)}&country=${countryCode}&method=${method}&school=${school}&latitudeAdjustmentMethod=${latitudeAdjustmentMethod}`
         );
         
         if (!response.ok) {
