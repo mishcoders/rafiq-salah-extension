@@ -88,7 +88,7 @@ function initializeElements() {
 
 async function loadCitiesData() {
     try {
-        const response = await fetch('cities.json');
+        const response = await fetch('constants/cities.json');
         citiesData = await response.json();
         populateCountrySelect();
     } catch (error) {
@@ -137,8 +137,10 @@ async function checkUserLocation() {
     if (result.selectedCountry && result.selectedCity) {
         showPrayerTimesSection(result.selectedCountry, result.selectedCity);
     } else if (!result.locationDetected) {
-        // First time user - attempt automatic location detection
-        await attemptAutoLocationDetection();
+        // First time user - show location selection UI immediately
+        showLocationSelection();
+        // Attempt automatic location detection in the background (don't await)
+        attemptAutoLocationDetection();
     } else {
         showLocationSelection();
     }
@@ -525,6 +527,7 @@ function updateCountdownDisplay() {
         second: '2-digit'
     }).replace(/AM/g, 'ص').replace(/PM/g, 'م');
     countdownText.textContent = `الوقت الحالي: ${timeStr}`;
+    countdownText.classList.remove('hidden');
 }
 
 async function updateCalculationMethodDisplay() {
