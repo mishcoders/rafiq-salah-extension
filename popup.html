@@ -9,7 +9,7 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1><img src="icon.png" alt="رفيق الصلاة"> رفيق الصلاة</h1>
+        <h1><img src="icon.png" class="icon" alt="رفيق الصلاة"> رفيق الصلاة</h1>
         <div class="countdown hidden" id="countdownText"></div>
       </div>
 
@@ -56,7 +56,11 @@
             🔔 تفعيل التذكير
           </button>
 
-          <!-- Reminder Settings -->
+          <button class="btn btn-secondary" id="settingsToggle">
+            ⚙️ إعدادات التذكير
+          </button>
+
+          <!-- Reminder Settings Panel -->
           <div id="reminderSettings" class="reminder-settings hidden">
             <h4>إعدادات التذكير:</h4>
             <div class="setting-group">
@@ -95,10 +99,6 @@
             </button>
           </div>
 
-          <button class="btn btn-secondary" id="settingsToggle">
-            ⚙️ إعدادات التذكير
-          </button>
-
           <a
             href="https://rafiq-salah.vercel.app"
             target="_blank"
@@ -117,6 +117,13 @@
       <div id="errorState" class="error hidden"></div>
     </div>
 
-    <script src="popup.js"></script>
+    <!-- Scripts loaded in dependency order -->
+    <script src="./scripts/constants.js"></script>
+    <script src="./scripts/storage.js"></script>
+    <script src="./scripts/ui.js"></script>
+    <script src="./scripts/location.js"></script>
+    <script src="./scripts/prayer.js"></script>
+    <script src="./scripts/events.js"></script>
+    <script src="./scripts/popup.js"></script>
   </body>
 </html>
