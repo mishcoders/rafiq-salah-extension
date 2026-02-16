@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Prayer Pal - رفيق الصلاة",
-  "version": "2.6",
+  "version": "2.6.3",
   "description": "إكستنشن رفيق الصلاة للدول العربية مع تذكير قابل للتخصيص وطرق حساب متعددة",
   "homepage_url": "https://rafiq-salah.vercel.app",
-  "author": "Prayer Pal Team",
+  "author": "mishcoders Team",
   "permissions": [
     "storage",
     "alarms",

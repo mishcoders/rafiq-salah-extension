@@ -636,13 +636,8 @@ function setupEventListeners() {
         reminderSettings.classList.add('hidden');
         
         // Show success message
-        showError('تم حفظ الإعدادات بنجاح');
-        setTimeout(() => {
-            hideError();
-        }, 2000);
+        showSuccess('تم حفظ الإعدادات بنجاح');
     });
-    
-
 }
 
 function showLoading(show) {
@@ -660,6 +655,37 @@ function showError(message) {
 
 function hideError() {
     errorState.classList.add('hidden');
+}
+
+function showSuccess(message) {
+    errorState.textContent = message;
+    errorState.classList.remove('hidden');
+    errorState.classList.add('snackbar');
+    errorState.style.background = 'rgb(34, 197, 94)';
+    errorState.style.color = '#fff';
+
+    // Auto-hide after 3 seconds
+    const timeoutId = setTimeout(() => {
+        hideSuccess();
+    }, 3000);
+
+    // Store timeout ID to clear if needed
+    if (errorState.snackbarTimeout) {
+        clearTimeout(errorState.snackbarTimeout);
+    }
+    errorState.snackbarTimeout = timeoutId;
+}
+
+function hideSuccess() {
+    errorState.classList.add('hidden');
+    errorState.classList.remove('snackbar');
+    errorState.style.background = '';
+    errorState.style.color = '';
+
+    if (errorState.snackbarTimeout) {
+        clearTimeout(errorState.snackbarTimeout);
+        errorState.snackbarTimeout = null;
+    }
 }
 
 // Cleanup on popup close

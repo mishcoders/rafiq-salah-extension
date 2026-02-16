@@ -1,3 +1,9 @@
+try {
+    importScripts('config.js');
+} catch (e) {
+    console.error('Failed to load config.js:', e);
+}
+
 // Prayer names in Arabic
 const PRAYER_NAMES = {
     'Fajr': 'الفجر',
@@ -8,8 +14,22 @@ const PRAYER_NAMES = {
     'Isha': 'العشاء'
 };
 
+// Debug logging helper
+function debugLog(message, data = null) {
+    if (typeof CONFIG !== 'undefined' && CONFIG.developerMode) {
+        const timestamp = new Date().toISOString();
+        const logMsg = `[PrayerPal Debug ${timestamp}] ${message}`;
+        if (data) {
+            console.log(logMsg, data);
+        } else {
+            console.log(logMsg);
+        }
+    }
+}
+
 // Initialize background script
 chrome.runtime.onInstalled.addListener(async () => {
+    debugLog('Extension installed/updated');
     setupDailyUpdate();
     setupKeepAlive();
     
@@ -98,6 +118,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
 // Handle messages from popup
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+    debugLog('Message received:', request.action);
     switch (request.action) {
         case 'updatePrayerTimes':
             await setupPrayerAlarms(request.prayerTimes, request.countryCode, request.cityName);
@@ -119,12 +140,15 @@ async function validateReminderTime() {
         const result = await chrome.storage.local.get(['prayerTimes', 'reminderTime']);
         
         if (!result.prayerTimes) {
+            debugLog('Validation failed: No prayer times found');
             return false;
         }
         
         const reminderMinutes = result.reminderTime || 5;
         const now = new Date();
         const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+        
+        debugLog(`Validating reminder. Current time: ${currentTimeMinutes}, Reminder min: ${reminderMinutes}`);
         
         // Check all prayer times to see if we're within any valid reminder window
         const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -140,13 +164,16 @@ async function validateReminderTime() {
                 
                 // Check if current time is within the reminder window for this prayer
                 if (currentTimeMinutes >= reminderStartMinutes && currentTimeMinutes <= prayerTimeMinutes) {
+                    debugLog(`Validation success for ${prayerName}. Window: ${reminderStartMinutes}-${prayerTimeMinutes}`);
                     return true;
                 }
             }
         }
         
+        debugLog('Validation failed: Not in any reminder window');
         return false;
     } catch (error) {
+        debugLog('Validation error:', error);
         // If there's an error, err on the side of not showing notifications
         return false;
     }
@@ -177,6 +204,7 @@ async function setupNextDayAlarm(alarmName) {
 }
 
 async function setupPrayerAlarms(prayerTimes, countryCode, cityName) {
+    debugLog('Setting up prayer alarms', { countryCode, cityName, prayerTimes });
     // Clear existing prayer alarms
     const alarms = await chrome.alarms.getAll();
     for (const alarm of alarms) {
@@ -190,6 +218,8 @@ async function setupPrayerAlarms(prayerTimes, countryCode, cityName) {
     const reminderEnabled = result.reminderEnabled !== false; // Default to true
     const reminderMinutes = result.reminderTime || 5; // Default to 5 minutes
     
+    debugLog(`Reminders enabled: ${reminderEnabled}, Minutes: ${reminderMinutes}`);
+
     if (!reminderEnabled) {
         return;
     }
@@ -210,6 +240,7 @@ async function setupPrayerAlarms(prayerTimes, countryCode, cityName) {
             
             // Set alarm for today if reminder time is in the future
             if (reminderTime > now) {
+                debugLog(`Setting alarm for ${prayer} at ${reminderTime.toLocaleTimeString()}`);
                 chrome.alarms.create(`prayer_${prayer}`, {
                     when: reminderTime.getTime()
                 });
@@ -218,6 +249,7 @@ async function setupPrayerAlarms(prayerTimes, countryCode, cityName) {
                 const tomorrowPrayerDate = new Date(prayerDate.getTime() + 24 * 60 * 60 * 1000);
                 const tomorrowReminderTime = new Date(tomorrowPrayerDate.getTime() - reminderMinutes * 60 * 1000);
                 
+                debugLog(`Setting alarm for ${prayer} (tomorrow) at ${tomorrowReminderTime.toLocaleTimeString()}`);
                 chrome.alarms.create(`prayer_${prayer}`, {
                     when: tomorrowReminderTime.getTime()
                 });
@@ -619,6 +651,11 @@ async function restoreAlarmsOnStartup() {
         // Ensure daily update alarm is set
         setupDailyUpdate();
         setupKeepAlive();
+
+        // Check for developer mode
+        if (typeof checkDeveloperMode === 'function') {
+            await checkDeveloperMode();
+        }
         
     } catch (error) {
         // Silent error handling
@@ -626,4 +663,45 @@ async function restoreAlarmsOnStartup() {
 }
 
 // Call restore function immediately when service worker starts
-restoreAlarmsOnStartup();
+// restoreAlarmsOnStartup();
+
+async function checkDeveloperMode() {
+    if (typeof CONFIG !== 'undefined' && CONFIG.developerMode) {
+        console.log('Developer Mode Enabled');
+        
+        // 1. Force reminder time to match the offset so notification appears immediately
+        const offset = CONFIG.testPrayerOffsetMinutes || 2;
+        await chrome.storage.local.set({ reminderTime: offset });
+        
+        // 2. Set fake prayer times
+        // Add 2 minutes buffer to ensure:
+        // (PrayerTime truncated to minutes) - ReminderTime > Now
+        const now = new Date();
+        const testTime = new Date(now.getTime() + (offset + 2) * 60000);
+        const hours = testTime.getHours();
+        const minutes = testTime.getMinutes();
+        const timeStr = `${hours}:${minutes < 10 ? '0' + minutes : minutes}`;
+        
+        // We'll set 'Maghrib' as the test prayer
+        const prayerTimes = {
+            'Fajr': '00:00',
+            'Sunrise': '00:00',
+            'Dhuhr': '00:00',
+            'Asr': '00:00',
+            'Maghrib': timeStr,
+            'Isha': '00:00'
+        };
+        
+        await chrome.storage.local.set({ prayerTimes: prayerTimes });
+        
+        // 3. Trigger alarm setup
+        const result = await chrome.storage.local.get(['currentCountryCode', 'currentCityName']);
+        const country = result.currentCountryCode || 'SA';
+        const city = result.currentCityName || 'Makkah';
+        
+        await setupPrayerAlarms(prayerTimes, country, city);
+        
+        console.log(`Developer Mode: Set Maghrib to ${timeStr} and reminder to ${offset} minutes.`);
+        debugLog(`Developer Mode initialized. Test time: ${testTime.toLocaleTimeString()}`);
+    }
+}
