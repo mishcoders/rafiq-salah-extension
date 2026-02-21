@@ -245,6 +245,122 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       }
 
+      .prayer-cards {
+        display: flex;
+        flex-direction: row;
+        gap: 14px;
+        margin: 12px 0 24px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(209, 166, 123, 0.8) rgba(15, 23, 42, 0.35);
+      }
+
+      .prayer-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px;
+        background: rgba(15, 23, 42, 0.65);
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.25);
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        animation: cardFadeUp 0.4s ease-out both;
+        min-width: 170px;
+        scroll-snap-align: start;
+      }
+
+      .prayer-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(209, 166, 123, 0.4);
+        box-shadow: 0 12px 22px rgba(15, 23, 42, 0.35);
+      }
+
+      .prayer-card.next {
+        background: linear-gradient(135deg, rgba(209, 166, 123, 0.25), rgba(59, 130, 246, 0.15));
+        border-color: rgba(209, 166, 123, 0.6);
+        box-shadow: 0 16px 30px rgba(209, 166, 123, 0.25);
+      }
+
+      .prayer-card-info {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .prayer-card-title {
+        font-size: 17px;
+        font-weight: 600;
+        color: #f8fafc;
+      }
+
+      .prayer-card-time {
+        font-size: 15px;
+        color: rgba(226, 232, 240, 0.85);
+      }
+
+      .prayer-card-next {
+        font-size: 12px;
+        font-weight: 600;
+        color: #0f172a;
+        background: rgba(209, 166, 123, 0.95);
+        padding: 6px 10px;
+        border-radius: 999px;
+        box-shadow: 0 4px 10px rgba(209, 166, 123, 0.3);
+      }
+
+      .prayer-cards::-webkit-scrollbar {
+        height: 8px;
+      }
+
+      .prayer-cards::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.35);
+        border-radius: 999px;
+      }
+
+      .prayer-cards::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, rgba(209, 166, 123, 0.9), rgba(209, 166, 123, 0.6));
+        border-radius: 999px;
+        border: 2px solid rgba(15, 23, 42, 0.35);
+        transition: background 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .prayer-cards::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, rgba(209, 166, 123, 1), rgba(209, 166, 123, 0.7));
+        box-shadow: 0 0 8px rgba(209, 166, 123, 0.6);
+      }
+
+      @media (min-width: 1024px) {
+        .prayer-cards {
+          overflow-x: visible;
+          flex-wrap: nowrap;
+        }
+        .prayer-card {
+          flex: 1 1 0;
+          min-width: 0;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .prayer-cards {
+          scroll-padding: 0 12px;
+        }
+      }
+
+      @keyframes cardFadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
       .next-prayer {
         font-size: 18px;
         font-weight: 600;
@@ -451,8 +567,10 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         animation: panelSlideDown 0.4s ease-out forwards;
         transition: max-height 0.4s ease, opacity 0.4s ease, transform 0.4s ease, padding 0.4s ease, margin 0.4s ease;
-        max-height: 600px;
-        overflow: hidden;
+        max-height: 760px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(209, 166, 123, 0.7) rgba(15, 23, 42, 0.5);
       }
 
       .reminder-settings.scroll-focus {
@@ -532,8 +650,129 @@
         letter-spacing: 0.3px;
       }
 
+      .reminder-settings::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .reminder-settings::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.45);
+        border-radius: 999px;
+      }
+
+      .reminder-settings::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, rgba(209, 166, 123, 0.85), rgba(209, 166, 123, 0.5));
+        border-radius: 999px;
+        border: 2px solid rgba(15, 23, 42, 0.4);
+        transition: background 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .reminder-settings::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, rgba(209, 166, 123, 1), rgba(209, 166, 123, 0.65));
+        box-shadow: 0 0 8px rgba(209, 166, 123, 0.6);
+      }
+
+      .reminder-settings .btn + .btn {
+        margin-top: 12px;
+      }
+
+      .reminder-settings .test-reminder-btn {
+        border-color: rgba(74, 140, 232, 0.5);
+        background: rgba(30, 41, 59, 0.95);
+        color: #e2e8f0;
+      }
+
+      .reminder-settings .test-reminder-btn:hover {
+        background: rgba(59, 130, 246, 0.15);
+        color: #f8fafc;
+        border-color: rgba(74, 140, 232, 0.75);
+      }
+
+      @media (prefers-color-scheme: light) {
+        .reminder-settings .test-reminder-btn {
+          background: #f8fafc;
+          color: #1f2937;
+          border-color: rgba(59, 130, 246, 0.35);
+        }
+      }
+
       .setting-group {
         margin-bottom: 24px;
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+      }
+
+      .toggle-row.disabled {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
+      .toggle-info {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .toggle-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #f8fafc;
+      }
+
+      .toggle-subtitle {
+        font-size: 12px;
+        color: rgba(226, 232, 240, 0.7);
+      }
+
+      .toggle-switch {
+        position: relative;
+        width: 52px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .toggle-slider {
+        position: absolute;
+        inset: 0;
+        background: rgba(148, 163, 184, 0.4);
+        border-radius: 999px;
+        transition: background 0.2s ease;
+      }
+
+      .toggle-slider::before {
+        content: "";
+        position: absolute;
+        height: 22px;
+        width: 22px;
+        right: 3px;
+        top: 3px;
+        border-radius: 50%;
+        background: #f8fafc;
+        transition: transform 0.2s ease;
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.3);
+      }
+
+      .toggle-switch input:checked + .toggle-slider {
+        background: rgba(209, 166, 123, 0.9);
+      }
+
+      .toggle-switch input:checked + .toggle-slider::before {
+        transform: translateX(-24px);
       }
 
       .setting-group label {

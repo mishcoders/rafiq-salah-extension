@@ -51,6 +51,8 @@
           <div class="calculation-method" id="calculationMethodText"></div>
         </div>
 
+        <div class="prayer-cards" id="prayerCards"></div>
+
         <div class="controls">
           <button class="btn btn-primary" id="reminderToggle">
             🔔 تفعيل التذكير
@@ -63,6 +65,32 @@
           <!-- Reminder Settings Panel -->
           <div id="reminderSettings" class="reminder-settings hidden">
             <h4>إعدادات التذكير:</h4>
+            <div class="setting-group">
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-title">تذكير قبل الصلاة</div>
+                  <div class="toggle-subtitle">تنبيه قبل الموعد حسب الدقائق المحددة</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="preReminderToggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-group">
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-title">تنبيه وقت الصلاة</div>
+                  <div class="toggle-subtitle">تنبيه عند دخول وقت الصلاة مباشرة</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="exactReminderToggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
             <div class="setting-group">
               <label for="reminderTime">التذكير قبل الصلاة بـ:</label>
               <div class="select-container">
@@ -97,6 +125,9 @@
             <button class="btn btn-primary" id="saveSettings">
               حفظ الإعدادات
             </button>
+            <button class="btn btn-secondary test-reminder-btn" id="testReminderBtn">
+              🧪 اختبار التنبيه
+            </button>
           </div>
 
           <a
@@ -118,7 +149,6 @@
     </div>
 
     <!-- Scripts loaded in dependency order -->
-    <script src="config.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

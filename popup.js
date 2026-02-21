@@ -47,16 +47,26 @@ const CALCULATION_METHODS = {
 // DOM elements
 let countrySelect, citySelect, saveLocationBtn, locationDisplay, locationText, editLocationBtn;
 let locationSelection, prayerTimesSection, loadingState, errorState;
-let nextPrayerText, countdownText, reminderToggle, calculationMethodText;
+let nextPrayerText, countdownText, reminderToggle, calculationMethodText, prayerCards;
 
 // Global variables
 let citiesData = [];
 let currentPrayerTimes = null;
 let countdownInterval = null;
 let settingsToggle, reminderSettings, reminderTimeSelect, calculationMethodSelect, saveSettingsBtn;
+let testReminderBtn;
+let preReminderToggle, exactReminderToggle;
 let scrollAnimationFrame = null;
 let scrollCancelHandlers = [];
 let isAutoScrolling = false;
+let lastPrayerCardSignature = null;
+let notificationMasterEnabled = true;
+let idleAutoScrollTimer = null;
+let idleAutoScrollFrame = null;
+let idleAutoScrollDirection = 1;
+let idleAutoScrollActive = false;
+let idleAutoScrollLastTime = 0;
+let isCardHovering = false;
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
@@ -64,6 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadCitiesData();
     await checkUserLocation();
     setupEventListeners();
+    initializeIdleAutoScroll();
 });
 
 function initializeElements() {
@@ -81,11 +92,15 @@ function initializeElements() {
     countdownText = document.getElementById('countdownText');
     reminderToggle = document.getElementById('reminderToggle');
     calculationMethodText = document.getElementById('calculationMethodText');
+    prayerCards = document.getElementById('prayerCards');
     settingsToggle = document.getElementById('settingsToggle');
     reminderSettings = document.getElementById('reminderSettings');
     reminderTimeSelect = document.getElementById('reminderTime');
     calculationMethodSelect = document.getElementById('calculationMethod');
     saveSettingsBtn = document.getElementById('saveSettings');
+    testReminderBtn = document.getElementById('testReminderBtn');
+    preReminderToggle = document.getElementById('preReminderToggle');
+    exactReminderToggle = document.getElementById('exactReminderToggle');
 
 }
 
@@ -498,6 +513,8 @@ function updatePrayerDisplay() {
     
     const formattedTime = formatTo12Hour(nextPrayer.timeStr);
     nextPrayerText.innerHTML = `🕌 الصلاة القادمة: ${PRAYER_NAMES[nextPrayer.name]} في ${formattedTime}<br><span class="countdown-time">${timeText}</span>`;
+
+    renderPrayerCards(prayers, nextPrayer.name, formatTo12Hour);
     
     // Update calculation method display
     updateCalculationMethodDisplay();
@@ -617,6 +634,7 @@ function startAutoScroll(targetY, prefersReducedMotion) {
 
 function openSettingsMenu() {
     reminderSettings.classList.remove('hidden');
+    stopIdleAutoScroll();
     const scrollRoot = getScrollRoot();
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     requestAnimationFrame(() => {
@@ -652,10 +670,21 @@ async function updateCalculationMethodDisplay() {
 }
 
 async function updateReminderToggle() {
-    const result = await chrome.storage.local.get(['reminderEnabled', 'reminderTime', 'calculationMethod', 'selectedCountry']);
+    const result = await chrome.storage.local.get([
+        'reminderEnabled',
+        'reminderTime',
+        'calculationMethod',
+        'selectedCountry',
+        'preReminderEnabled',
+        'exactReminderEnabled',
+        'lastScheduleError'
+    ]);
     const isEnabled = result.reminderEnabled !== false; // Default to true
+    const preEnabled = result.preReminderEnabled !== false;
+    const exactEnabled = result.exactReminderEnabled === true;
+    notificationMasterEnabled = isEnabled;
     
-    reminderToggle.textContent = isEnabled ? '🚫 إيقاف التذكير' : '🔔 تفعيل التذكير';
+    reminderToggle.textContent = isEnabled ? '🚫 إيقاف جميع التنبيهات' : '🔔 تفعيل التنبيهات';
     reminderToggle.className = isEnabled ? 'btn btn-danger' : 'btn btn-primary';
     
     // Update settings UI
@@ -666,6 +695,17 @@ async function updateReminderToggle() {
     // Set calculation method - default to auto if not set
     const currentMethod = result.calculationMethod || 'auto';
     calculationMethodSelect.value = currentMethod;
+
+    preReminderToggle.checked = preEnabled;
+    exactReminderToggle.checked = exactEnabled;
+    updateToggleAvailability(isEnabled);
+
+    if (result.lastScheduleError && result.lastScheduleError.message) {
+        showError(result.lastScheduleError.message);
+        setTimeout(() => {
+            hideError();
+        }, 3000);
+    }
 }
 
 function setupEventListeners() {
@@ -713,6 +753,14 @@ function setupEventListeners() {
             enabled: newState
         });
     });
+
+    preReminderToggle.addEventListener('change', () => {
+        updateToggleAvailability(notificationMasterEnabled);
+    });
+
+    exactReminderToggle.addEventListener('change', () => {
+        updateToggleAvailability(notificationMasterEnabled);
+    });
     
     settingsToggle.addEventListener('click', () => {
         const isHidden = reminderSettings.classList.contains('hidden');
@@ -726,10 +774,14 @@ function setupEventListeners() {
     saveSettingsBtn.addEventListener('click', async () => {
         const reminderTime = parseInt(reminderTimeSelect.value);
         const calculationMethod = calculationMethodSelect.value; // Keep as string to handle 'auto'
+        const preEnabled = preReminderToggle.checked;
+        const exactEnabled = exactReminderToggle.checked;
         
         await chrome.storage.local.set({
             reminderTime: reminderTime,
-            calculationMethod: calculationMethod
+            calculationMethod: calculationMethod,
+            preReminderEnabled: preEnabled,
+            exactReminderEnabled: exactEnabled
         });
         
         // Reload prayer times with new calculation method
@@ -741,14 +793,207 @@ function setupEventListeners() {
         // Update calculation method display
         updateCalculationMethodDisplay();
         
+        await chrome.runtime.sendMessage({
+            action: 'updateNotificationSettings'
+        });
+
         // Hide settings panel
         closeSettingsMenu();
         
         // Show success message
         showSuccess('تم حفظ الإعدادات بنجاح');
     });
+
+    testReminderBtn.addEventListener('click', async () => {
+        const now = new Date();
+        const testTime = new Date(now.getTime() + 2 * 60000);
+        const hours = String(testTime.getHours()).padStart(2, '0');
+        const minutes = String(testTime.getMinutes()).padStart(2, '0');
+        const timeStr = `${hours}:${minutes}`;
+
+        await chrome.storage.local.set({
+            reminderEnabled: true,
+            preReminderEnabled: true,
+            exactReminderEnabled: true,
+            reminderTime: 1,
+            prayerTimes: {
+                Fajr: '00:00',
+                Sunrise: '00:00',
+                Dhuhr: '00:00',
+                Asr: '00:00',
+                Maghrib: timeStr,
+                Isha: '00:00'
+            }
+        });
+
+        await updateReminderToggle();
+        const result = await chrome.storage.local.get(['currentCountryCode', 'currentCityName']);
+        chrome.runtime.sendMessage({
+            action: 'updatePrayerTimes',
+            prayerTimes: {
+                Fajr: '00:00',
+                Sunrise: '00:00',
+                Dhuhr: '00:00',
+                Asr: '00:00',
+                Maghrib: timeStr,
+                Isha: '00:00'
+            },
+            countryCode: result.currentCountryCode || 'SA',
+            cityName: result.currentCityName || 'Riyadh'
+        });
+
+        showSuccess('تم جدولة تنبيه تجريبي خلال دقيقتين');
+    });
     
 
+}
+
+function updateToggleAvailability(isEnabled) {
+    const toggleRows = reminderSettings.querySelectorAll('.toggle-row');
+    toggleRows.forEach(row => {
+        row.classList.toggle('disabled', !isEnabled);
+    });
+    preReminderToggle.disabled = !isEnabled;
+    exactReminderToggle.disabled = !isEnabled;
+    reminderTimeSelect.disabled = !isEnabled || !preReminderToggle.checked;
+    calculationMethodSelect.disabled = !isEnabled;
+}
+
+function renderPrayerCards(prayers, nextPrayerName, formatTo12Hour) {
+    if (!prayerCards) {
+        return;
+    }
+    const signature = `${nextPrayerName}:${prayers.map(prayer => prayer.name + prayer.timeStr).join('|')}`;
+    if (signature === lastPrayerCardSignature) {
+        return;
+    }
+    lastPrayerCardSignature = signature;
+    prayerCards.innerHTML = '';
+
+    prayers.forEach(prayer => {
+        const card = document.createElement('div');
+        card.className = `prayer-card${prayer.name === nextPrayerName ? ' next' : ''}`;
+
+        const info = document.createElement('div');
+        info.className = 'prayer-card-info';
+
+        const title = document.createElement('div');
+        title.className = 'prayer-card-title';
+        title.textContent = PRAYER_NAMES[prayer.name];
+
+        const time = document.createElement('div');
+        time.className = 'prayer-card-time';
+        time.textContent = formatTo12Hour(prayer.timeStr);
+
+        info.appendChild(title);
+        info.appendChild(time);
+
+        card.appendChild(info);
+
+        if (prayer.name === nextPrayerName) {
+            const badge = document.createElement('div');
+            badge.className = 'prayer-card-next';
+            badge.textContent = 'التالي';
+            card.appendChild(badge);
+        }
+
+        prayerCards.appendChild(card);
+    });
+    scheduleIdleAutoScroll();
+}
+
+function initializeIdleAutoScroll() {
+    if (!prayerCards) {
+        return;
+    }
+    scheduleIdleAutoScroll();
+    prayerCards.addEventListener('mouseenter', handleCardsHoverStart);
+    prayerCards.addEventListener('mouseleave', handleCardsHoverEnd);
+    prayerCards.addEventListener('wheel', handleCardsScrollInteraction, { passive: true });
+    prayerCards.addEventListener('touchstart', handleCardsScrollInteraction, { passive: true });
+    prayerCards.addEventListener('touchmove', handleCardsScrollInteraction, { passive: true });
+    prayerCards.addEventListener('pointerdown', handleCardsScrollInteraction, { passive: true });
+    prayerCards.addEventListener('pointermove', handleCardsScrollInteraction, { passive: true });
+    prayerCards.addEventListener('scroll', handleCardsScrollInteraction, { passive: true });
+}
+
+function handleCardsHoverStart() {
+    isCardHovering = true;
+    stopIdleAutoScroll();
+    clearIdleAutoScrollTimer();
+}
+
+function handleCardsHoverEnd() {
+    isCardHovering = false;
+    scheduleIdleAutoScroll();
+}
+
+function handleCardsScrollInteraction() {
+    stopIdleAutoScroll();
+    scheduleIdleAutoScroll();
+}
+
+function clearIdleAutoScrollTimer() {
+    if (idleAutoScrollTimer) {
+        clearTimeout(idleAutoScrollTimer);
+        idleAutoScrollTimer = null;
+    }
+}
+
+function scheduleIdleAutoScroll() {
+    if (isCardHovering) {
+        return;
+    }
+    clearIdleAutoScrollTimer();
+    idleAutoScrollTimer = setTimeout(() => {
+        startIdleAutoScroll();
+    }, 4000);
+}
+
+function startIdleAutoScroll() {
+    if (idleAutoScrollActive || isAutoScrolling || !prayerCards) {
+        return;
+    }
+    const maxScroll = prayerCards.scrollWidth - prayerCards.clientWidth;
+    if (maxScroll <= 0) {
+        scheduleIdleAutoScroll();
+        return;
+    }
+    idleAutoScrollActive = true;
+    idleAutoScrollLastTime = performance.now();
+
+    const step = (now) => {
+        if (!idleAutoScrollActive || !prayerCards) {
+            return;
+        }
+        const deltaSeconds = Math.max((now - idleAutoScrollLastTime) / 1000, 0);
+        idleAutoScrollLastTime = now;
+        const currentMax = prayerCards.scrollWidth - prayerCards.clientWidth;
+        if (currentMax <= 0) {
+            stopIdleAutoScroll();
+            return;
+        }
+        let nextScrollLeft = prayerCards.scrollLeft + idleAutoScrollDirection * 70 * deltaSeconds;
+        if (nextScrollLeft >= currentMax) {
+            nextScrollLeft = currentMax;
+            idleAutoScrollDirection = -1;
+        } else if (nextScrollLeft <= 0) {
+            nextScrollLeft = 0;
+            idleAutoScrollDirection = 1;
+        }
+        prayerCards.scrollLeft = nextScrollLeft;
+        idleAutoScrollFrame = requestAnimationFrame(step);
+    };
+
+    idleAutoScrollFrame = requestAnimationFrame(step);
+}
+
+function stopIdleAutoScroll() {
+    if (idleAutoScrollFrame) {
+        cancelAnimationFrame(idleAutoScrollFrame);
+        idleAutoScrollFrame = null;
+    }
+    idleAutoScrollActive = false;
 }
 
 function showLoading(show) {
@@ -802,4 +1047,6 @@ window.addEventListener('beforeunload', () => {
     if (countdownInterval) {
         clearInterval(countdownInterval);
     }
+    stopIdleAutoScroll();
+    clearIdleAutoScrollTimer();
 });

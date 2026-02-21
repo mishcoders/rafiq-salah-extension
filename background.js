@@ -105,6 +105,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         case 'toggleReminder':
             await handleReminderToggle(request.enabled);
             break;
+        case 'updateNotificationSettings':
+            await handleNotificationSettingsUpdate();
+            break;
 
 
 
@@ -154,9 +157,15 @@ async function validateReminderTime() {
 
 // Set up alarm for next day
 async function setupNextDayAlarm(alarmName) {
-    const prayerName = alarmName.replace('prayer_', '');
-    const result = await chrome.storage.local.get(['prayerTimes', 'reminderTime']);
+    const alarmParts = alarmName.split('_');
+    const alarmType = alarmParts.length >= 3 ? alarmParts[1] : 'pre';
+    const prayerName = alarmParts.length >= 3 ? alarmParts.slice(2).join('_') : alarmParts.slice(1).join('_');
+    const result = await chrome.storage.local.get(['prayerTimes', 'reminderTime', 'preReminderEnabled', 'exactReminderEnabled', 'reminderEnabled']);
     
+    if (!result.reminderEnabled && result.reminderEnabled !== undefined) {
+        return;
+    }
+
     if (result.prayerTimes && result.prayerTimes[prayerName]) {
         const reminderMinutes = result.reminderTime || 5;
         const prayerTime = result.prayerTimes[prayerName];
@@ -167,11 +176,14 @@ async function setupNextDayAlarm(alarmName) {
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(hours, minutes, 0, 0);
         
-        const tomorrowReminderTime = new Date(tomorrow.getTime() - reminderMinutes * 60 * 1000);
-        
-        chrome.alarms.create(alarmName, {
-            when: tomorrowReminderTime.getTime()
-        });
+        if (alarmType === 'pre' && result.preReminderEnabled !== false) {
+            const tomorrowReminderTime = new Date(tomorrow.getTime() - reminderMinutes * 60 * 1000);
+            scheduleAlarmSafe(alarmName, tomorrowReminderTime.getTime());
+        }
+
+        if (alarmType === 'exact' && result.exactReminderEnabled === true) {
+            scheduleAlarmSafe(alarmName, tomorrow.getTime());
+        }
         
     }
 }
@@ -185,14 +197,22 @@ async function setupPrayerAlarms(prayerTimes, countryCode, cityName) {
         }
     }
     
-    // Check if reminders are enabled and get reminder time
-    const result = await chrome.storage.local.get(['reminderEnabled', 'reminderTime']);
-    const reminderEnabled = result.reminderEnabled !== false; // Default to true
-    const reminderMinutes = result.reminderTime || 5; // Default to 5 minutes
+    const result = await chrome.storage.local.get([
+        'reminderEnabled',
+        'reminderTime',
+        'preReminderEnabled',
+        'exactReminderEnabled'
+    ]);
+    const reminderEnabled = result.reminderEnabled !== false;
+    const reminderMinutes = result.reminderTime || 5;
+    const preEnabled = result.preReminderEnabled !== false;
+    const exactEnabled = result.exactReminderEnabled === true;
     
     if (!reminderEnabled) {
         return;
     }
+
+    await chrome.storage.local.set({ lastScheduleError: null });
     
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -205,22 +225,24 @@ async function setupPrayerAlarms(prayerTimes, countryCode, cityName) {
             const prayerDate = new Date(today);
             prayerDate.setHours(hours, minutes, 0, 0);
             
-            // Set reminder based on user preference
-            const reminderTime = new Date(prayerDate.getTime() - reminderMinutes * 60 * 1000);
-            
-            // Set alarm for today if reminder time is in the future
-            if (reminderTime > now) {
-                chrome.alarms.create(`prayer_${prayer}`, {
-                    when: reminderTime.getTime()
-                });
-            } else {
-                // If reminder time has passed today, set for tomorrow
-                const tomorrowPrayerDate = new Date(prayerDate.getTime() + 24 * 60 * 60 * 1000);
-                const tomorrowReminderTime = new Date(tomorrowPrayerDate.getTime() - reminderMinutes * 60 * 1000);
-                
-                chrome.alarms.create(`prayer_${prayer}`, {
-                    when: tomorrowReminderTime.getTime()
-                });
+            if (preEnabled) {
+                const reminderTime = new Date(prayerDate.getTime() - reminderMinutes * 60 * 1000);
+                if (reminderTime > now) {
+                    scheduleAlarmSafe(`prayer_pre_${prayer}`, reminderTime.getTime());
+                } else {
+                    const tomorrowPrayerDate = new Date(prayerDate.getTime() + 24 * 60 * 60 * 1000);
+                    const tomorrowReminderTime = new Date(tomorrowPrayerDate.getTime() - reminderMinutes * 60 * 1000);
+                    scheduleAlarmSafe(`prayer_pre_${prayer}`, tomorrowReminderTime.getTime());
+                }
+            }
+
+            if (exactEnabled) {
+                if (prayerDate > now) {
+                    scheduleAlarmSafe(`prayer_exact_${prayer}`, prayerDate.getTime());
+                } else {
+                    const tomorrowExact = new Date(prayerDate.getTime() + 24 * 60 * 60 * 1000);
+                    scheduleAlarmSafe(`prayer_exact_${prayer}`, tomorrowExact.getTime());
+                }
             }
         }
     });
@@ -233,15 +255,30 @@ async function setupPrayerAlarms(prayerTimes, countryCode, cityName) {
 }
 
 async function handlePrayerReminder(alarmName) {
-    const prayerName = alarmName.replace('prayer_', '');
+    const alarmParts = alarmName.split('_');
+    const alarmType = alarmParts.length >= 3 ? alarmParts[1] : 'pre';
+    const prayerName = alarmParts.length >= 3 ? alarmParts.slice(2).join('_') : alarmParts.slice(1).join('_');
     const arabicName = PRAYER_NAMES[prayerName];
     
-    // Check if reminders are still enabled and get reminder time
-    const result = await chrome.storage.local.get(['reminderEnabled', 'reminderTime', 'prayerTimes']);
+    const result = await chrome.storage.local.get([
+        'reminderEnabled',
+        'reminderTime',
+        'prayerTimes',
+        'preReminderEnabled',
+        'exactReminderEnabled'
+    ]);
     const reminderEnabled = result.reminderEnabled !== false;
     const reminderMinutes = result.reminderTime || 5;
     
     if (!reminderEnabled) {
+        return;
+    }
+
+    if (alarmType === 'pre' && result.preReminderEnabled === false) {
+        return;
+    }
+
+    if (alarmType === 'exact' && result.exactReminderEnabled !== true) {
         return;
     }
     
@@ -255,30 +292,39 @@ async function handlePrayerReminder(alarmName) {
         const prayerTime = new Date();
         prayerTime.setHours(hours, minutes, 0, 0);
         
-        // Calculate the reminder window start time
-        const reminderStartTime = new Date(prayerTime.getTime() - reminderMinutes * 60 * 1000);
-        
-        // Check if current time is before the reminder window or after the prayer time
-        if (now < reminderStartTime || now > prayerTime) {
-            // We're outside the valid reminder window, don't send notification
-            return;
+        if (alarmType === 'pre') {
+            const reminderStartTime = new Date(prayerTime.getTime() - reminderMinutes * 60 * 1000);
+            if (now < reminderStartTime || now > prayerTime) {
+                return;
+            }
+        }
+
+        if (alarmType === 'exact') {
+            const diffMinutes = Math.abs(now.getTime() - prayerTime.getTime()) / 60000;
+            if (diffMinutes > 10) {
+                return;
+            }
         }
     }
     
     // Create appropriate message based on reminder time
     let timeMessage;
-    if (reminderMinutes === 1) {
-        timeMessage = 'خلال دقيقة واحدة';
-    } else if (reminderMinutes < 60) {
-        timeMessage = `خلال ${reminderMinutes} دقيقة`;
-    } else {
-        const hours = Math.floor(reminderMinutes / 60);
-        const mins = reminderMinutes % 60;
-        if (mins === 0) {
-            timeMessage = `خلال ${hours} ساعة`;
+    if (alarmType === 'pre') {
+        if (reminderMinutes === 1) {
+            timeMessage = 'خلال دقيقة واحدة';
+        } else if (reminderMinutes < 60) {
+            timeMessage = `خلال ${reminderMinutes} دقيقة`;
         } else {
-            timeMessage = `خلال ${hours} ساعة و${mins} دقيقة`;
+            const hours = Math.floor(reminderMinutes / 60);
+            const mins = reminderMinutes % 60;
+            if (mins === 0) {
+                timeMessage = `خلال ${hours} ساعة`;
+            } else {
+                timeMessage = `خلال ${hours} ساعة و${mins} دقيقة`;
+            }
         }
+    } else {
+        timeMessage = 'الآن';
     }
     
     const notificationId = `prayer_notification_${Date.now()}`;
@@ -294,14 +340,13 @@ async function handlePrayerReminder(alarmName) {
         await chrome.notifications.create(notificationId, {
             type: 'basic',
             iconUrl: 'icon.png',
-            title: 'تذكير الصلاة 🕌',
-            message: `حان وقت صلاة ${arabicName} ${timeMessage}`,
+            title: alarmType === 'pre' ? 'تذكير الصلاة 🕌' : 'حان وقت الصلاة 🕌',
+            message: alarmType === 'pre' ? `حان وقت صلاة ${arabicName} ${timeMessage}` : `حان وقت صلاة ${arabicName}`,
             priority: 2,
             requireInteraction: true,
-            buttons: [
-                { title: 'تم' },
-                { title: 'تأجيل 5 دقائق' }
-            ]
+            buttons: alarmType === 'pre'
+                ? [{ title: 'تم' }, { title: 'تأجيل 5 دقائق' }]
+                : [{ title: 'تم' }]
         });
         
         // Auto-clear after 2 minutes if not interacted with
@@ -316,7 +361,7 @@ async function handlePrayerReminder(alarmName) {
                 type: 'basic',
                 iconUrl: 'icon.png',
                 title: 'تذكير الصلاة',
-                message: `صلاة ${arabicName} ${timeMessage}`
+                message: alarmType === 'pre' ? `صلاة ${arabicName} ${timeMessage}` : `حان وقت صلاة ${arabicName}`
             });
         } catch (fallbackError) {
             // Silent error handling
@@ -335,10 +380,39 @@ async function handleReminderToggle(enabled) {
         // Clear all prayer alarms if reminders are disabled
         const alarms = await chrome.alarms.getAll();
         for (const alarm of alarms) {
-            if (alarm.name.startsWith('prayer_')) {
+            if (alarm.name.startsWith('prayer_') || alarm.name.startsWith('snooze_')) {
                 chrome.alarms.clear(alarm.name);
             }
         }
+    }
+}
+
+async function handleNotificationSettingsUpdate() {
+    const result = await chrome.storage.local.get(['prayerTimes', 'currentCountryCode', 'currentCityName', 'reminderEnabled']);
+    if (result.reminderEnabled === false) {
+        const alarms = await chrome.alarms.getAll();
+        for (const alarm of alarms) {
+            if (alarm.name.startsWith('prayer_') || alarm.name.startsWith('snooze_')) {
+                chrome.alarms.clear(alarm.name);
+            }
+        }
+        return;
+    }
+    if (result.prayerTimes && result.currentCountryCode && result.currentCityName) {
+        setupPrayerAlarms(result.prayerTimes, result.currentCountryCode, result.currentCityName);
+    }
+}
+
+function scheduleAlarmSafe(alarmName, when) {
+    try {
+        chrome.alarms.create(alarmName, { when });
+    } catch (error) {
+        chrome.storage.local.set({
+            lastScheduleError: {
+                message: 'حدث خطأ أثناء جدولة التنبيهات. يرجى المحاولة مرة أخرى.',
+                at: Date.now()
+            }
+        });
     }
 }
 
