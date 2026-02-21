@@ -92,15 +92,23 @@
             </div>
 
             <div class="setting-group">
-              <label for="reminderTime">التذكير قبل الصلاة بـ:</label>
-              <div class="select-container">
-                <select id="reminderTime">
-                  <option value="1">دقيقة واحدة</option>
-                  <option value="5" selected>5 دقائق</option>
-                  <option value="10">10 دقائق</option>
-                  <option value="15">15 دقيقة</option>
-                  <option value="30">30 دقيقة</option>
-                </select>
+              <label for="reminderTimeSlider">التذكير قبل الصلاة بـ:</label>
+              <div class="reminder-slider" id="reminderTimeSliderWrap">
+                <input
+                  type="range"
+                  id="reminderTimeSlider"
+                  min="0"
+                  max="4"
+                  step="1"
+                  value="1"
+                />
+                <div class="reminder-slider-labels" role="list">
+                  <button type="button" class="reminder-slider-label" data-value="1">1 د</button>
+                  <button type="button" class="reminder-slider-label active" data-value="5">5 د</button>
+                  <button type="button" class="reminder-slider-label" data-value="10">10 د</button>
+                  <button type="button" class="reminder-slider-label" data-value="15">15 د</button>
+                  <button type="button" class="reminder-slider-label" data-value="30">30 د</button>
+                </div>
               </div>
             </div>
 

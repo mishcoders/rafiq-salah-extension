@@ -53,7 +53,7 @@ let nextPrayerText, countdownText, reminderToggle, calculationMethodText, prayer
 let citiesData = [];
 let currentPrayerTimes = null;
 let countdownInterval = null;
-let settingsToggle, reminderSettings, reminderTimeSelect, calculationMethodSelect, saveSettingsBtn;
+let settingsToggle, reminderSettings, reminderTimeSlider, reminderTimeSliderWrap, reminderTimeLabels, calculationMethodSelect, saveSettingsBtn;
 let testReminderBtn;
 let preReminderToggle, exactReminderToggle;
 let scrollAnimationFrame = null;
@@ -67,6 +67,7 @@ let idleAutoScrollDirection = 1;
 let idleAutoScrollActive = false;
 let idleAutoScrollLastTime = 0;
 let isCardHovering = false;
+const reminderTimeOptions = [1, 5, 10, 15, 30];
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
@@ -95,13 +96,44 @@ function initializeElements() {
     prayerCards = document.getElementById('prayerCards');
     settingsToggle = document.getElementById('settingsToggle');
     reminderSettings = document.getElementById('reminderSettings');
-    reminderTimeSelect = document.getElementById('reminderTime');
+    reminderTimeSlider = document.getElementById('reminderTimeSlider');
+    reminderTimeSliderWrap = document.getElementById('reminderTimeSliderWrap');
+    reminderTimeLabels = Array.from(document.querySelectorAll('.reminder-slider-label'));
     calculationMethodSelect = document.getElementById('calculationMethod');
     saveSettingsBtn = document.getElementById('saveSettings');
     testReminderBtn = document.getElementById('testReminderBtn');
     preReminderToggle = document.getElementById('preReminderToggle');
     exactReminderToggle = document.getElementById('exactReminderToggle');
 
+}
+
+function getReminderTimeFromSlider() {
+    if (!reminderTimeSlider) {
+        return 5;
+    }
+    const index = Number(reminderTimeSlider.value);
+    return reminderTimeOptions[index] || 5;
+}
+
+function setReminderSliderByMinutes(minutes) {
+    if (!reminderTimeSlider) {
+        return;
+    }
+    const index = reminderTimeOptions.indexOf(minutes);
+    const safeIndex = index === -1 ? 1 : index;
+    reminderTimeSlider.value = String(safeIndex);
+    updateReminderSliderLabels(reminderTimeOptions[safeIndex]);
+}
+
+function updateReminderSliderLabels(selectedMinutes) {
+    if (!reminderTimeLabels || reminderTimeLabels.length === 0) {
+        return;
+    }
+    const currentValue = selectedMinutes ?? getReminderTimeFromSlider();
+    reminderTimeLabels.forEach(label => {
+        const labelValue = Number(label.dataset.value);
+        label.classList.toggle('active', labelValue === currentValue);
+    });
 }
 
 async function loadCitiesData() {
@@ -689,7 +721,9 @@ async function updateReminderToggle() {
     
     // Update settings UI
     if (result.reminderTime) {
-        reminderTimeSelect.value = result.reminderTime;
+        setReminderSliderByMinutes(result.reminderTime);
+    } else {
+        setReminderSliderByMinutes(5);
     }
     
     // Set calculation method - default to auto if not set
@@ -771,8 +805,23 @@ function setupEventListeners() {
         }
     });
     
+    if (reminderTimeSlider) {
+        reminderTimeSlider.addEventListener('input', () => {
+            updateReminderSliderLabels();
+        });
+    }
+
+    if (reminderTimeLabels && reminderTimeLabels.length > 0) {
+        reminderTimeLabels.forEach(label => {
+            label.addEventListener('click', () => {
+                const value = Number(label.dataset.value);
+                setReminderSliderByMinutes(value);
+            });
+        });
+    }
+
     saveSettingsBtn.addEventListener('click', async () => {
-        const reminderTime = parseInt(reminderTimeSelect.value);
+        const reminderTime = getReminderTimeFromSlider();
         const calculationMethod = calculationMethodSelect.value; // Keep as string to handle 'auto'
         const preEnabled = preReminderToggle.checked;
         const exactEnabled = exactReminderToggle.checked;
@@ -855,7 +904,12 @@ function updateToggleAvailability(isEnabled) {
     });
     preReminderToggle.disabled = !isEnabled;
     exactReminderToggle.disabled = !isEnabled;
-    reminderTimeSelect.disabled = !isEnabled || !preReminderToggle.checked;
+    if (reminderTimeSlider) {
+        reminderTimeSlider.disabled = !isEnabled || !preReminderToggle.checked;
+    }
+    if (reminderTimeSliderWrap) {
+        reminderTimeSliderWrap.classList.toggle('disabled', !isEnabled || !preReminderToggle.checked);
+    }
     calculationMethodSelect.disabled = !isEnabled;
 }
 
