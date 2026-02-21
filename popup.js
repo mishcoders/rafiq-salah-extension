@@ -54,6 +54,9 @@ let citiesData = [];
 let currentPrayerTimes = null;
 let countdownInterval = null;
 let settingsToggle, reminderSettings, reminderTimeSelect, calculationMethodSelect, saveSettingsBtn;
+let scrollAnimationFrame = null;
+let scrollCancelHandlers = [];
+let isAutoScrolling = false;
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
@@ -525,6 +528,110 @@ function updateCountdownDisplay() {
         second: '2-digit'
     }).replace(/AM/g, 'ص').replace(/PM/g, 'م');
     countdownText.textContent = `الوقت الحالي: ${timeStr}`;
+    countdownText.classList.remove('hidden');
+}
+
+function getScrollRoot() {
+    return document.scrollingElement || document.documentElement;
+}
+
+function clearScrollCancelHandlers() {
+    scrollCancelHandlers.forEach(handler => handler());
+    scrollCancelHandlers = [];
+}
+
+function cancelAutoScroll() {
+    if (scrollAnimationFrame) {
+        cancelAnimationFrame(scrollAnimationFrame);
+        scrollAnimationFrame = null;
+    }
+    isAutoScrolling = false;
+    clearScrollCancelHandlers();
+    if (reminderSettings) {
+        reminderSettings.classList.remove('scroll-focus');
+    }
+    document.body.classList.remove('scrolling-settings');
+}
+
+function addScrollCancelListener(type, options) {
+    const handler = () => {
+        if (isAutoScrolling) {
+            cancelAutoScroll();
+        }
+    };
+    document.addEventListener(type, handler, options);
+    scrollCancelHandlers.push(() => document.removeEventListener(type, handler, options));
+}
+
+function startAutoScroll(targetY, prefersReducedMotion) {
+    const scrollRoot = getScrollRoot();
+    cancelAutoScroll();
+    if (!scrollRoot) {
+        return;
+    }
+    if (prefersReducedMotion) {
+        scrollRoot.scrollTop = targetY;
+        if (reminderSettings) {
+            reminderSettings.classList.add('scroll-focus');
+            setTimeout(() => {
+                reminderSettings.classList.remove('scroll-focus');
+            }, 400);
+        }
+        return;
+    }
+    const startY = scrollRoot.scrollTop;
+    const distance = targetY - startY;
+    const duration = 400;
+    const startTime = performance.now();
+    isAutoScrolling = true;
+    if (reminderSettings) {
+        reminderSettings.classList.add('scroll-focus');
+    }
+    document.body.classList.add('scrolling-settings');
+    addScrollCancelListener('wheel', { passive: true });
+    addScrollCancelListener('touchstart', { passive: true });
+    addScrollCancelListener('mousedown', { passive: true });
+    addScrollCancelListener('keydown', false);
+
+    const ease = (t) => {
+        return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    };
+
+    const step = (now) => {
+        if (!isAutoScrolling) {
+            return;
+        }
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = ease(progress);
+        scrollRoot.scrollTop = startY + distance * eased;
+        if (progress < 1) {
+            scrollAnimationFrame = requestAnimationFrame(step);
+        } else {
+            cancelAutoScroll();
+        }
+    };
+
+    scrollAnimationFrame = requestAnimationFrame(step);
+}
+
+function openSettingsMenu() {
+    reminderSettings.classList.remove('hidden');
+    const scrollRoot = getScrollRoot();
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    requestAnimationFrame(() => {
+        const targetY = Math.max(scrollRoot.scrollHeight - scrollRoot.clientHeight, 0);
+        startAutoScroll(targetY, prefersReducedMotion);
+    });
+}
+
+function closeSettingsMenu() {
+    reminderSettings.classList.add('hidden');
+    cancelAutoScroll();
+    const scrollRoot = getScrollRoot();
+    if (scrollRoot) {
+        scrollRoot.scrollTop = 0;
+    }
 }
 
 async function updateCalculationMethodDisplay() {
@@ -608,7 +715,12 @@ function setupEventListeners() {
     });
     
     settingsToggle.addEventListener('click', () => {
-        reminderSettings.classList.toggle('hidden');
+        const isHidden = reminderSettings.classList.contains('hidden');
+        if (isHidden) {
+            openSettingsMenu();
+        } else {
+            closeSettingsMenu();
+        }
     });
     
     saveSettingsBtn.addEventListener('click', async () => {
@@ -630,13 +742,10 @@ function setupEventListeners() {
         updateCalculationMethodDisplay();
         
         // Hide settings panel
-        reminderSettings.classList.add('hidden');
+        closeSettingsMenu();
         
         // Show success message
-        showError('تم حفظ الإعدادات بنجاح');
-        setTimeout(() => {
-            hideError();
-        }, 2000);
+        showSuccess('تم حفظ الإعدادات بنجاح');
     });
     
 
@@ -647,6 +756,35 @@ function showLoading(show) {
         loadingState.classList.remove('hidden');
     } else {
         loadingState.classList.add('hidden');
+    }
+}
+
+function showSuccess(message) {
+    errorState.textContent = message;
+    errorState.classList.remove('hidden');
+    errorState.classList.add('snackbar');
+    errorState.style.background = 'rgb(34, 197, 94)';
+    errorState.style.color = '#fff';
+
+    const timeoutId = setTimeout(() => {
+        hideSuccess();
+    }, 3000);
+
+    if (errorState.snackbarTimeout) {
+        clearTimeout(errorState.snackbarTimeout);
+    }
+    errorState.snackbarTimeout = timeoutId;
+}
+
+function hideSuccess() {
+    errorState.classList.add('hidden');
+    errorState.classList.remove('snackbar');
+    errorState.style.background = '';
+    errorState.style.color = '';
+
+    if (errorState.snackbarTimeout) {
+        clearTimeout(errorState.snackbarTimeout);
+        errorState.snackbarTimeout = null;
     }
 }
 
