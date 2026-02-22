@@ -8,12 +8,8 @@
   "permissions": [
     "storage",
     "alarms",
-    "notifications"
-  ],
-  "host_permissions": [
-    "https://ipapi.co/*",
-    "http://ip-api.com/*",
-    "https://api.aladhan.com/*"
+    "notifications",
+    "geolocation"
   ],
   "action": {
     "default_popup": "popup.html",

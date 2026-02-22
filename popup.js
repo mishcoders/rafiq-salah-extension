@@ -249,22 +249,23 @@ function updateLoadingMessage(message) {
 
 
 
-async function getCurrentPosition() {
-    // Use IP-based geolocation - no permission prompt needed
-    try {
-        const response = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(8000) });
-        if (!response.ok) throw new Error('ipapi.co failed');
-        const data = await response.json();
-        if (!data.latitude || !data.longitude) throw new Error('No coords in response');
-        return { coords: { latitude: data.latitude, longitude: data.longitude } };
-    } catch (_) {
-        // Fallback to ip-api.com
-        const response = await fetch('http://ip-api.com/json/?fields=lat,lon,status', { signal: AbortSignal.timeout(8000) });
-        if (!response.ok) throw new Error('ip-api.com failed');
-        const data = await response.json();
-        if (data.status !== 'success') throw new Error('ip-api.com returned non-success status');
-        return { coords: { latitude: data.lat, longitude: data.lon } };
-    }
+function getCurrentPosition() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Geolocation is not supported'));
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            resolve,
+            reject,
+            {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 10000 // 5 minutes
+            }
+        );
+    });
 }
 
 // Calculate distance between two coordinates using Haversine formula
