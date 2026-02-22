@@ -67,81 +67,70 @@
       <div class="prayer-cards" id="prayerCards"></div>
 
       <div class="controls">
-        <button class="btn btn-primary" id="reminderToggle">
-          🔔 تفعيل التذكير
-        </button>
-
-        <button class="btn btn-secondary" id="settingsToggle">
+        <button class="btn btn-primary" id="settingsToggle">
           ⚙️ إعدادات التذكير
         </button>
+      </div>
 
-        <!-- Reminder Settings Panel -->
-        <div id="reminderSettings" class="reminder-settings hidden">
-          <h4>إعدادات التذكير:</h4>
-          <div class="setting-group">
-            <div class="toggle-row">
-              <div class="toggle-info">
-                <div class="toggle-title">تذكير قبل الصلاة</div>
-                <div class="toggle-subtitle">تنبيه قبل الموعد حسب الدقائق المحددة</div>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="preReminderToggle" />
-                <span class="toggle-slider"></span>
-              </label>
+      <!-- Reminder Settings Panel -->
+      <div id="reminderSettings" class="reminder-settings hidden">
+        <h4>إعدادات التذكير:</h4>
+        <div class="setting-group">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-title">تذكير قبل الصلاة</div>
+              <div class="toggle-subtitle">تنبيه قبل الموعد حسب الدقائق المحددة</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="preReminderToggle" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-title">تنبيه وقت الصلاة</div>
+              <div class="toggle-subtitle">تنبيه عند دخول وقت الصلاة مباشرة</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="exactReminderToggle" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label for="reminderTimeSlider">التذكير قبل الصلاة بـ:</label>
+          <div class="reminder-slider" id="reminderTimeSliderWrap">
+            <input type="range" id="reminderTimeSlider" min="0" max="4" step="1" value="1" />
+            <div class="reminder-slider-labels" role="list">
+              <button type="button" class="reminder-slider-label" data-value="1">1 د</button>
+              <button type="button" class="reminder-slider-label active" data-value="5">5 د</button>
+              <button type="button" class="reminder-slider-label" data-value="10">10 د</button>
+              <button type="button" class="reminder-slider-label" data-value="15">15 د</button>
+              <button type="button" class="reminder-slider-label" data-value="30">30 د</button>
             </div>
           </div>
+        </div>
 
-          <div class="setting-group">
-            <div class="toggle-row">
-              <div class="toggle-info">
-                <div class="toggle-title">تنبيه وقت الصلاة</div>
-                <div class="toggle-subtitle">تنبيه عند دخول وقت الصلاة مباشرة</div>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="exactReminderToggle" />
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
+        <div class="setting-group">
+          <label for="calculationMethod">طريقة الحساب:</label>
+          <div class="select-container">
+            <select id="calculationMethod">
+              <option value="auto">اختيار تلقائي (موصى به)</option>
+              <option value="2">الجمعية الإسلامية لأمريكا الشمالية</option>
+              <option value="3">رابطة العالم الإسلامي</option>
+              <option value="4">جامعة أم القرى (السعودية)</option>
+              <option value="5">الهيئة المصرية العامة للمساحة</option>
+              <option value="7">جامعة العلوم التطبيقية، كراتشي</option>
+              <option value="8">معهد الجيوفيزياء، جامعة طهران</option>
+              <option value="9">الخليج العربي</option>
+              <option value="10">قطر</option>
+            </select>
           </div>
-
-          <div class="setting-group">
-            <label for="reminderTimeSlider">التذكير قبل الصلاة بـ:</label>
-            <div class="reminder-slider" id="reminderTimeSliderWrap">
-              <input type="range" id="reminderTimeSlider" min="0" max="4" step="1" value="1" />
-              <div class="reminder-slider-labels" role="list">
-                <button type="button" class="reminder-slider-label" data-value="1">1 د</button>
-                <button type="button" class="reminder-slider-label active" data-value="5">5 د</button>
-                <button type="button" class="reminder-slider-label" data-value="10">10 د</button>
-                <button type="button" class="reminder-slider-label" data-value="15">15 د</button>
-                <button type="button" class="reminder-slider-label" data-value="30">30 د</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="setting-group">
-            <label for="calculationMethod">طريقة الحساب:</label>
-            <div class="select-container">
-              <select id="calculationMethod">
-                <option value="auto">اختيار تلقائي (موصى به)</option>
-                <option value="2">الجمعية الإسلامية لأمريكا الشمالية</option>
-                <option value="3">رابطة العالم الإسلامي</option>
-                <option value="4">جامعة أم القرى (السعودية)</option>
-                <option value="5">الهيئة المصرية العامة للمساحة</option>
-                <option value="7">جامعة العلوم التطبيقية، كراتشي</option>
-                <option value="8">معهد الجيوفيزياء، جامعة طهران</option>
-                <option value="9">الخليج العربي</option>
-                <option value="10">قطر</option>
-              </select>
-            </div>
-            <small> 💡 الاختيار التلقائي يحدد أفضل طريقة حساب لدولتك </small>
-          </div>
-
-          <button class="btn btn-primary" id="saveSettings">
-            حفظ الإعدادات
-          </button>
-          <button class="btn btn-secondary test-reminder-btn" id="testReminderBtn">
-            🧪 اختبار التنبيه
-          </button>
+          <small> 💡 الاختيار التلقائي يحدد أفضل طريقة حساب لدولتك </small>
         </div>
 
       </div>

@@ -47,14 +47,13 @@ const CALCULATION_METHODS = {
 // DOM elements
 let countrySelect, citySelect, saveLocationBtn, locationDisplay, locationText, editLocationBtn;
 let locationSelection, prayerTimesSection, loadingState, errorState;
-let nextPrayerText, countdownText, reminderToggle, calculationMethodText, prayerCards;
+let nextPrayerText, countdownText, calculationMethodText, prayerCards;
 
 // Global variables
 let citiesData = [];
 let currentPrayerTimes = null;
 let countdownInterval = null;
-let settingsToggle, reminderSettings, reminderTimeSlider, reminderTimeSliderWrap, reminderTimeLabels, calculationMethodSelect, saveSettingsBtn;
-let testReminderBtn;
+let settingsToggle, reminderSettings, reminderTimeSlider, reminderTimeSliderWrap, reminderTimeLabels, calculationMethodSelect;
 let preReminderToggle, exactReminderToggle;
 let scrollAnimationFrame = null;
 let scrollCancelHandlers = [];
@@ -91,7 +90,6 @@ function initializeElements() {
     errorState = document.getElementById('errorState');
     nextPrayerText = document.getElementById('nextPrayerText');
     countdownText = document.getElementById('countdownText');
-    reminderToggle = document.getElementById('reminderToggle');
     calculationMethodText = document.getElementById('calculationMethodText');
     prayerCards = document.getElementById('prayerCards');
     settingsToggle = document.getElementById('settingsToggle');
@@ -100,8 +98,6 @@ function initializeElements() {
     reminderTimeSliderWrap = document.getElementById('reminderTimeSliderWrap');
     reminderTimeLabels = Array.from(document.querySelectorAll('.reminder-slider-label'));
     calculationMethodSelect = document.getElementById('calculationMethod');
-    saveSettingsBtn = document.getElementById('saveSettings');
-    testReminderBtn = document.getElementById('testReminderBtn');
     preReminderToggle = document.getElementById('preReminderToggle');
     exactReminderToggle = document.getElementById('exactReminderToggle');
 
@@ -161,7 +157,7 @@ function populateCountrySelect() {
 function populateCitySelect(countryCode) {
     const country = citiesData.find(c => c.code === countryCode);
     citySelect.innerHTML = '<option value="">اختر المدينة</option>';
-    
+
     if (country && country.cities) {
         country.cities.forEach(city => {
             const option = document.createElement('option');
@@ -173,7 +169,7 @@ function populateCitySelect(countryCode) {
     } else {
         citySelect.disabled = true;
     }
-    
+
     updateSaveButton();
 }
 
@@ -183,7 +179,7 @@ function updateSaveButton() {
 
 async function checkUserLocation() {
     const result = await chrome.storage.local.get(['selectedCountry', 'selectedCity', 'locationDetected']);
-    
+
     if (result.selectedCountry && result.selectedCity) {
         showPrayerTimesSection(result.selectedCountry, result.selectedCity);
     } else if (!result.locationDetected) {
@@ -206,16 +202,16 @@ async function attemptAutoLocationDetection() {
         // Update loading message for location detection
         updateLoadingMessage('جاري تحديد موقعك تلقائياً...');
         showLoading(true);
-        
+
         const position = await getCurrentPosition();
         const { latitude, longitude } = position.coords;
-        
+
         // Update loading message for finding closest city
         updateLoadingMessage('جاري البحث عن أقرب مدينة...');
-        
+
         // Find closest city from our data
         const closestLocation = await findClosestCity(latitude, longitude);
-        
+
         if (closestLocation) {
             // Save the detected location
             await chrome.storage.local.set({
@@ -224,7 +220,7 @@ async function attemptAutoLocationDetection() {
                 locationDetected: true,
                 autoDetected: true
             });
-            
+
             // Show prayer times for detected location
             await showPrayerTimesSection(closestLocation.countryCode, closestLocation.cityName);
         } else {
@@ -276,10 +272,10 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371; // Earth's radius in kilometers
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
 
@@ -288,10 +284,10 @@ async function findClosestCity(userLat, userLon) {
     try {
         // Get approximate coordinates for major cities in each country
         const cityCoordinates = await getCityCoordinates();
-        
+
         let closestCity = null;
         let minDistance = Infinity;
-        
+
         for (const country of citiesData) {
             for (const city of country.cities) {
                 const coords = cityCoordinates[country.code]?.[city.en];
@@ -308,7 +304,7 @@ async function findClosestCity(userLat, userLon) {
                 }
             }
         }
-        
+
         // Only return if within reasonable distance (500km)
         return (closestCity && closestCity.distance < 500) ? closestCity : null;
     } catch (error) {
@@ -417,19 +413,19 @@ function getCityCoordinates() {
 async function showPrayerTimesSection(countryCode, cityName) {
     const country = citiesData.find(c => c.code === countryCode);
     const city = country?.cities.find(c => c.en === cityName);
-    
+
     if (country && city) {
         // Check if location was auto-detected
         const result = await chrome.storage.local.get(['autoDetected']);
         const autoDetectedText = result.autoDetected ? ' 📍' : '';
-        
+
         locationText.textContent = `${city.ar}, ${country.name}${autoDetectedText}`;
         locationDisplay.classList.remove('hidden');
         locationSelection.classList.add('hidden');
-        
+
         await loadPrayerTimes(countryCode, cityName);
         await updateReminderToggle();
-        
+
         prayerTimesSection.classList.remove('hidden');
     }
 }
@@ -437,46 +433,46 @@ async function showPrayerTimesSection(countryCode, cityName) {
 async function loadPrayerTimes(countryCode, cityName) {
     showLoading(true);
     hideError();
-    
+
     try {
         // Get current date (use local date to avoid UTC offset issues)
         const today = new Date();
         const dateStr = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
-        
+
         // Auto-detect calculation method based on country, fallback to user setting or default
         const settings = await chrome.storage.local.get(['calculationMethod']);
         const autoMethod = countryMethodMap[countryCode] || 2;
-        
+
         let method;
         if (settings.calculationMethod === 'auto' || !settings.calculationMethod) {
             method = autoMethod;
         } else {
             method = parseInt(settings.calculationMethod);
         }
-        
+
         // Fetch prayer times from Aladhan API (include safe defaults for school/latitude adjustment)
         const school = 0; // Shafi/Maliki/Hanbali default
         const latitudeAdjustmentMethod = 'NONE';
         const response = await fetch(
             `https://api.aladhan.com/v1/timingsByCity/${dateStr}?city=${encodeURIComponent(cityName)}&country=${countryCode}&method=${method}&school=${school}&latitudeAdjustmentMethod=${latitudeAdjustmentMethod}`
         );
-        
+
         if (!response.ok) {
             throw new Error('Failed to fetch prayer times');
         }
-        
+
         const data = await response.json();
-        
+
         if (data.code === 200 && data.data && data.data.timings) {
             currentPrayerTimes = data.data.timings;
-            await chrome.storage.local.set({ 
+            await chrome.storage.local.set({
                 prayerTimes: currentPrayerTimes,
                 lastUpdated: Date.now()
             });
-            
+
             updatePrayerDisplay();
             startCountdown();
-            
+
             // Send prayer times to background script for alarm setup
             chrome.runtime.sendMessage({
                 action: 'updatePrayerTimes',
@@ -496,10 +492,10 @@ async function loadPrayerTimes(countryCode, cityName) {
 
 function updatePrayerDisplay() {
     if (!currentPrayerTimes) return;
-    
+
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
-    
+
     // Prayer times in minutes from midnight
     const prayers = [
         { name: 'Fajr', time: timeToMinutes(currentPrayerTimes.Fajr), timeStr: currentPrayerTimes.Fajr },
@@ -508,7 +504,7 @@ function updatePrayerDisplay() {
         { name: 'Maghrib', time: timeToMinutes(currentPrayerTimes.Maghrib), timeStr: currentPrayerTimes.Maghrib },
         { name: 'Isha', time: timeToMinutes(currentPrayerTimes.Isha), timeStr: currentPrayerTimes.Isha }
     ];
-    
+
     // Find next prayer
     let nextPrayer = null;
     for (const prayer of prayers) {
@@ -517,16 +513,16 @@ function updatePrayerDisplay() {
             break;
         }
     }
-    
+
     // If no prayer found today, next prayer is Fajr tomorrow
     if (!nextPrayer) {
         nextPrayer = { name: 'Fajr', time: prayers[0].time + 24 * 60, timeStr: currentPrayerTimes.Fajr };
     }
-    
+
     const timeUntil = nextPrayer.time - currentTime;
     const hours = Math.floor(timeUntil / 60);
     const minutes = timeUntil % 60;
-    
+
     // Convert 24-hour time to 12-hour AM/PM format with Arabic indicators
     function formatTo12Hour(timeStr) {
         const [hours, minutes] = timeStr.split(':').map(Number);
@@ -534,19 +530,19 @@ function updatePrayerDisplay() {
         const displayHours = hours % 12 || 12;
         return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
     }
-    
+
     let timeText = '';
     if (hours > 0) {
         timeText = `${hours} ساعة و${minutes} دقيقة`;
     } else {
         timeText = `${minutes} دقيقة`;
     }
-    
+
     const formattedTime = formatTo12Hour(nextPrayer.timeStr);
     nextPrayerText.innerHTML = `🕌 الصلاة القادمة: ${PRAYER_NAMES[nextPrayer.name]} في ${formattedTime}<br><span class="countdown-time">${timeText}</span>`;
 
     renderPrayerCards(prayers, nextPrayer.name, formatTo12Hour);
-    
+
     // Update calculation method display
     updateCalculationMethodDisplay();
 }
@@ -560,7 +556,7 @@ function startCountdown() {
     if (countdownInterval) {
         clearInterval(countdownInterval);
     }
-    
+
     countdownInterval = setInterval(() => {
         updatePrayerDisplay();
         updateCountdownDisplay();
@@ -568,8 +564,9 @@ function startCountdown() {
 }
 
 function updateCountdownDisplay() {
+    if (!countdownText) return;
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('ar-SA', { 
+    const timeStr = now.toLocaleTimeString('ar-SA', {
         hour12: true,
         hour: '2-digit',
         minute: '2-digit',
@@ -675,18 +672,22 @@ function openSettingsMenu() {
 }
 
 function closeSettingsMenu() {
-    reminderSettings.classList.add('hidden');
-    cancelAutoScroll();
     const scrollRoot = getScrollRoot();
-    if (scrollRoot) {
-        scrollRoot.scrollTop = 0;
-    }
+    if (!scrollRoot) return;
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Start smooth scroll back to top
+    startAutoScroll(0, prefersReducedMotion);
+
+    // Add hidden class to trigger CSS transition
+    reminderSettings.classList.add('hidden');
 }
 
 async function updateCalculationMethodDisplay() {
     const result = await chrome.storage.local.get(['calculationMethod', 'selectedCountry']);
     const currentMethod = result.calculationMethod || 'auto';
-    
+
     let methodName;
     if (currentMethod === 'auto' && result.selectedCountry) {
         const autoMethodId = countryMethodMap[result.selectedCountry] || 2;
@@ -694,7 +695,7 @@ async function updateCalculationMethodDisplay() {
     } else {
         methodName = CALCULATION_METHODS[currentMethod] || CALCULATION_METHODS['auto'];
     }
-    
+
     if (calculationMethodText) {
         calculationMethodText.textContent = `طريقة الحساب: ${methodName}`;
     }
@@ -702,7 +703,6 @@ async function updateCalculationMethodDisplay() {
 
 async function updateReminderToggle() {
     const result = await chrome.storage.local.get([
-        'reminderEnabled',
         'reminderTime',
         'calculationMethod',
         'selectedCountry',
@@ -710,28 +710,26 @@ async function updateReminderToggle() {
         'exactReminderEnabled',
         'lastScheduleError'
     ]);
-    const isEnabled = result.reminderEnabled !== false; // Default to true
+
+    // Default both reminders to true if not explicitly set to false
     const preEnabled = result.preReminderEnabled !== false;
-    const exactEnabled = result.exactReminderEnabled === true;
-    notificationMasterEnabled = isEnabled;
-    
-    reminderToggle.textContent = isEnabled ? '🚫 إيقاف جميع التنبيهات' : '🔔 تفعيل التنبيهات';
-    reminderToggle.className = isEnabled ? 'btn btn-danger' : 'btn btn-primary';
-    
+    const exactEnabled = result.exactReminderEnabled !== false;
+    notificationMasterEnabled = true;
+
     // Update settings UI
     if (result.reminderTime) {
         setReminderSliderByMinutes(result.reminderTime);
     } else {
         setReminderSliderByMinutes(5);
     }
-    
+
     // Set calculation method - default to auto if not set
     const currentMethod = result.calculationMethod || 'auto';
     calculationMethodSelect.value = currentMethod;
 
     preReminderToggle.checked = preEnabled;
     exactReminderToggle.checked = exactEnabled;
-    updateToggleAvailability(isEnabled);
+    updateToggleAvailability(true);
 
     if (result.lastScheduleError && result.lastScheduleError.message) {
         showError(result.lastScheduleError.message);
@@ -745,24 +743,24 @@ function setupEventListeners() {
     countrySelect.addEventListener('change', (e) => {
         populateCitySelect(e.target.value);
     });
-    
+
     citySelect.addEventListener('change', updateSaveButton);
-    
+
     saveLocationBtn.addEventListener('click', async () => {
         const countryCode = countrySelect.value;
         const cityName = citySelect.value;
-        
+
         if (countryCode && cityName) {
             await chrome.storage.local.set({
                 selectedCountry: countryCode,
                 selectedCity: cityName,
                 autoDetected: false // Clear auto-detected flag for manual selection
             });
-            
+
             await showPrayerTimesSection(countryCode, cityName);
         }
     });
-    
+
     editLocationBtn.addEventListener('click', () => {
         showLocationSelection();
         // Reset selections
@@ -771,30 +769,15 @@ function setupEventListeners() {
         citySelect.disabled = true;
         updateSaveButton();
     });
-    
-    reminderToggle.addEventListener('click', async () => {
-        const result = await chrome.storage.local.get(['reminderEnabled']);
-        const currentState = result.reminderEnabled !== false;
-        const newState = !currentState;
-        
-        await chrome.storage.local.set({ reminderEnabled: newState });
-        await updateReminderToggle();
-        
-        // Notify background script
-        chrome.runtime.sendMessage({
-            action: 'toggleReminder',
-            enabled: newState
-        });
-    });
 
     preReminderToggle.addEventListener('change', () => {
-        updateToggleAvailability(notificationMasterEnabled);
+        updateToggleAvailability(true);
     });
 
     exactReminderToggle.addEventListener('change', () => {
-        updateToggleAvailability(notificationMasterEnabled);
+        updateToggleAvailability(true);
     });
-    
+
     settingsToggle.addEventListener('click', () => {
         const isHidden = reminderSettings.classList.contains('hidden');
         if (isHidden) {
@@ -803,8 +786,34 @@ function setupEventListeners() {
             closeSettingsMenu();
         }
     });
-    
+
+    async function saveSettings() {
+        const reminderTime = getReminderTimeFromSlider();
+        const calculationMethod = calculationMethodSelect.value;
+        const preEnabled = preReminderToggle.checked;
+        const exactEnabled = exactReminderToggle.checked;
+
+        await chrome.storage.local.set({
+            reminderTime: reminderTime,
+            calculationMethod: calculationMethod,
+            preReminderEnabled: preEnabled,
+            exactReminderEnabled: exactEnabled
+        });
+
+        const result = await chrome.storage.local.get(['selectedCountry', 'selectedCity']);
+        if (result.selectedCountry && result.selectedCity) {
+            await loadPrayerTimes(result.selectedCountry, result.selectedCity);
+        }
+
+        updateCalculationMethodDisplay();
+
+        await chrome.runtime.sendMessage({
+            action: 'updateNotificationSettings'
+        });
+    }
+
     if (reminderTimeSlider) {
+        reminderTimeSlider.addEventListener('change', saveSettings);
         reminderTimeSlider.addEventListener('input', () => {
             updateReminderSliderLabels();
         });
@@ -812,87 +821,25 @@ function setupEventListeners() {
 
     if (reminderTimeLabels && reminderTimeLabels.length > 0) {
         reminderTimeLabels.forEach(label => {
-            label.addEventListener('click', () => {
+            label.addEventListener('click', async () => {
                 const value = Number(label.dataset.value);
                 setReminderSliderByMinutes(value);
+                await saveSettings();
             });
         });
     }
 
-    saveSettingsBtn.addEventListener('click', async () => {
-        const reminderTime = getReminderTimeFromSlider();
-        const calculationMethod = calculationMethodSelect.value; // Keep as string to handle 'auto'
-        const preEnabled = preReminderToggle.checked;
-        const exactEnabled = exactReminderToggle.checked;
-        
-        await chrome.storage.local.set({
-            reminderTime: reminderTime,
-            calculationMethod: calculationMethod,
-            preReminderEnabled: preEnabled,
-            exactReminderEnabled: exactEnabled
-        });
-        
-        // Reload prayer times with new calculation method
-        const result = await chrome.storage.local.get(['selectedCountry', 'selectedCity']);
-        if (result.selectedCountry && result.selectedCity) {
-            await loadPrayerTimes(result.selectedCountry, result.selectedCity);
-        }
-        
-        // Update calculation method display
-        updateCalculationMethodDisplay();
-        
-        await chrome.runtime.sendMessage({
-            action: 'updateNotificationSettings'
-        });
-
-        // Hide settings panel
-        closeSettingsMenu();
-        
-        // Show success message
-        showSuccess('تم حفظ الإعدادات بنجاح');
+    preReminderToggle.addEventListener('change', async () => {
+        updateToggleAvailability(true);
+        await saveSettings();
     });
 
-    testReminderBtn.addEventListener('click', async () => {
-        const now = new Date();
-        const testTime = new Date(now.getTime() + 2 * 60000);
-        const hours = String(testTime.getHours()).padStart(2, '0');
-        const minutes = String(testTime.getMinutes()).padStart(2, '0');
-        const timeStr = `${hours}:${minutes}`;
-
-        await chrome.storage.local.set({
-            reminderEnabled: true,
-            preReminderEnabled: true,
-            exactReminderEnabled: true,
-            reminderTime: 1,
-            prayerTimes: {
-                Fajr: '00:00',
-                Sunrise: '00:00',
-                Dhuhr: '00:00',
-                Asr: '00:00',
-                Maghrib: timeStr,
-                Isha: '00:00'
-            }
-        });
-
-        await updateReminderToggle();
-        const result = await chrome.storage.local.get(['currentCountryCode', 'currentCityName']);
-        chrome.runtime.sendMessage({
-            action: 'updatePrayerTimes',
-            prayerTimes: {
-                Fajr: '00:00',
-                Sunrise: '00:00',
-                Dhuhr: '00:00',
-                Asr: '00:00',
-                Maghrib: timeStr,
-                Isha: '00:00'
-            },
-            countryCode: result.currentCountryCode || 'SA',
-            cityName: result.currentCityName || 'Riyadh'
-        });
-
-        showSuccess('تم جدولة تنبيه تجريبي خلال دقيقتين');
+    exactReminderToggle.addEventListener('change', async () => {
+        updateToggleAvailability(true);
+        await saveSettings();
     });
-    
+
+    calculationMethodSelect.addEventListener('change', saveSettings);
 
 }
 
@@ -1057,34 +1004,7 @@ function showLoading(show) {
     }
 }
 
-function showSuccess(message) {
-    errorState.textContent = message;
-    errorState.classList.remove('hidden');
-    errorState.classList.add('snackbar');
-    errorState.style.background = 'rgb(34, 197, 94)';
-    errorState.style.color = '#fff';
 
-    const timeoutId = setTimeout(() => {
-        hideSuccess();
-    }, 3000);
-
-    if (errorState.snackbarTimeout) {
-        clearTimeout(errorState.snackbarTimeout);
-    }
-    errorState.snackbarTimeout = timeoutId;
-}
-
-function hideSuccess() {
-    errorState.classList.add('hidden');
-    errorState.classList.remove('snackbar');
-    errorState.style.background = '';
-    errorState.style.color = '';
-
-    if (errorState.snackbarTimeout) {
-        clearTimeout(errorState.snackbarTimeout);
-        errorState.snackbarTimeout = null;
-    }
-}
 
 function showError(message) {
     errorState.textContent = message;

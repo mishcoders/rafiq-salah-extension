@@ -12,7 +12,6 @@ html {
 
 body {
   width: 420px;
-  min-height: 520px;
   margin: 0;
   padding: 0;
   font-family: 'Cairo', 'Noto Sans Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -25,14 +24,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
   border: none;
   outline: none;
+  overflow-y: auto;
   overflow-x: hidden;
 }
 
 .container {
   background: transparent;
-  min-height: 520px;
-  padding: 24px;
-  padding-top: 20px;
+  padding: 16px;
+  padding-top: 12px;
   backdrop-filter: blur(10px);
   position: relative;
   border: none;
@@ -73,8 +72,8 @@ body {
 
 .header {
   text-align: center;
-  margin-bottom: 32px;
-  padding: 16px 0;
+  margin-bottom: 12px;
+  padding: 8px 0;
   border-bottom: 1px solid rgba(209, 166, 123, 0.1);
 }
 
@@ -102,10 +101,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 28px;
-  padding: 16px 20px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
   background: rgba(30, 41, 59, 0.8);
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid rgba(209, 166, 123, 0.2);
   backdrop-filter: blur(8px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -143,8 +142,8 @@ body {
 }
 
 .selection-section h3 {
-  margin: 0 0 24px 0;
-  font-size: 20px;
+  margin: 0 0 16px 0;
+  font-size: 19px;
   font-weight: 600;
   color: #f1f5f9;
   text-align: center;
@@ -160,8 +159,8 @@ body {
 
 .select-container label {
   display: block;
-  margin-bottom: 12px;
-  font-size: 15px;
+  margin-bottom: 8px;
+  font-size: 14px;
   font-weight: 500;
   color: rgb(209, 166, 123);
   letter-spacing: 0.2px;
@@ -173,19 +172,19 @@ select {
   align-items: center;
   justify-content: space-between;
   white-space: nowrap;
-  padding: 14px 20px;
+  padding: 10px 16px;
   border: 1px solid rgba(209, 166, 123, 0.3);
-  border-radius: 12px;
+  border-radius: 10px;
   background: rgba(30, 41, 59, 0.9);
   color: #f8fafc;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   direction: rtl;
   appearance: none;
   cursor: pointer;
   transition: all 0.3s ease;
   ring-offset-background: 2px;
-  height: 48px;
+  height: 42px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(8px);
 }
@@ -268,41 +267,40 @@ select::-webkit-scrollbar-thumb:hover {
 
 .prayer-info {
   text-align: center;
-  margin: 24px 0;
-  padding: 20px;
+  margin: 8px 0;
+  padding: 12px;
   background: rgba(30, 41, 59, 0.6);
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid rgba(209, 166, 123, 0.2);
   backdrop-filter: blur(8px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .prayer-cards {
-  display: flex;
-  flex-direction: row;
-  gap: 14px;
-  margin: 12px 0 24px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(209, 166, 123, 0.8) rgba(15, 23, 42, 0.35);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+
+.prayer-card:last-child:nth-child(odd) {
+  grid-column: span 2;
+  justify-content: center;
+  gap: 16px;
 }
 
 .prayer-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 16px 18px;
+  gap: 8px;
+  padding: 10px 12px;
   background: rgba(15, 23, 42, 0.65);
-  border-radius: 18px;
+  border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.2);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.25);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   animation: cardFadeUp 0.4s ease-out both;
-  min-width: 170px;
-  scroll-snap-align: start;
 }
 
 .prayer-card:hover {
@@ -320,67 +318,30 @@ select::-webkit-scrollbar-thumb:hover {
 .prayer-card-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .prayer-card-title {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 600;
   color: #f8fafc;
 }
 
 .prayer-card-time {
-  font-size: 15px;
+  font-size: 13px;
   color: rgba(226, 232, 240, 0.85);
 }
 
 .prayer-card-next {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #0f172a;
   background: rgba(209, 166, 123, 0.95);
-  padding: 6px 10px;
+  padding: 5px 8px;
   border-radius: 999px;
   box-shadow: 0 4px 10px rgba(209, 166, 123, 0.3);
-}
-
-.prayer-cards::-webkit-scrollbar {
-  height: 8px;
-}
-
-.prayer-cards::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.35);
-  border-radius: 999px;
-}
-
-.prayer-cards::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, rgba(209, 166, 123, 0.9), rgba(209, 166, 123, 0.6));
-  border-radius: 999px;
-  border: 2px solid rgba(15, 23, 42, 0.35);
-  transition: background 0.2s ease, box-shadow 0.2s ease;
-}
-
-.prayer-cards::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, rgba(209, 166, 123, 1), rgba(209, 166, 123, 0.7));
-  box-shadow: 0 0 8px rgba(209, 166, 123, 0.6);
-}
-
-@media (min-width: 1024px) {
-  .prayer-cards {
-    overflow-x: visible;
-    flex-wrap: nowrap;
-  }
-
-  .prayer-card {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-}
-
-@media (max-width: 600px) {
-  .prayer-cards {
-    scroll-padding: 0 12px;
-  }
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 @keyframes cardFadeUp {
@@ -396,9 +357,9 @@ select::-webkit-scrollbar-thumb:hover {
 }
 
 .next-prayer {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   color: #f1f5f9;
   letter-spacing: 0.3px;
 }
@@ -443,8 +404,8 @@ select::-webkit-scrollbar-thumb:hover {
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 24px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .btn {
@@ -463,7 +424,7 @@ select::-webkit-scrollbar-thumb:hover {
   text-decoration: none;
   font-family: inherit;
   letter-spacing: 0.1px;
-  height: 40px;
+  height: 38px;
   width: 100%;
   ring-offset-background: 2px;
   box-sizing: border-box;
@@ -579,19 +540,21 @@ select::-webkit-scrollbar-thumb:hover {
 }
 
 .reminder-settings {
-  background: rgba(30, 41, 59, 0.8);
-  border-radius: 16px;
-  padding: 24px;
-  margin: 20px 0;
+  background: rgba(30, 41, 59, 0.85);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
   border: 1px solid rgba(209, 166, 123, 0.2);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  animation: panelSlideDown 0.4s ease-out forwards;
-  transition: max-height 0.4s ease, opacity 0.4s ease, transform 0.4s ease, padding 0.4s ease, margin 0.4s ease;
-  max-height: 760px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(209, 166, 123, 0.7) rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease,
+    transform 0.35s ease,
+    padding 0.35s ease,
+    margin 0.35s ease;
+  max-height: 600px;
+  overflow: hidden;
+  opacity: 1;
 }
 
 .reminder-settings.scroll-focus {
@@ -602,43 +565,17 @@ select::-webkit-scrollbar-thumb:hover {
 }
 
 .reminder-settings.hidden {
-  animation: panelSlideUp 0.4s ease-out forwards;
   display: block;
   max-height: 0;
-  padding: 0 24px;
+  padding: 0 16px;
   margin: 0;
   border: none;
   opacity: 0;
   pointer-events: none;
+  transform: translateY(-10px);
 }
 
-@keyframes panelSlideDown {
-  from {
-    max-height: 0;
-    opacity: 0;
-    transform: translateY(-20px);
-  }
 
-  to {
-    max-height: 600px;
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes panelSlideUp {
-  from {
-    max-height: 600px;
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  to {
-    max-height: 0;
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-}
 
 @keyframes scrollPulse {
   0% {
@@ -669,8 +606,8 @@ select::-webkit-scrollbar-thumb:hover {
 }
 
 .reminder-settings h4 {
-  margin: 0 0 24px 0;
-  font-size: 18px;
+  margin: 0 0 16px 0;
+  font-size: 16px;
   color: rgb(209, 166, 123);
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -701,39 +638,20 @@ select::-webkit-scrollbar-thumb:hover {
   margin-top: 12px;
 }
 
-.reminder-settings .test-reminder-btn {
-  border-color: rgba(74, 140, 232, 0.5);
-  background: rgba(30, 41, 59, 0.95);
-  color: #e2e8f0;
-}
-
-.reminder-settings .test-reminder-btn:hover {
-  background: rgba(59, 130, 246, 0.15);
-  color: #f8fafc;
-  border-color: rgba(74, 140, 232, 0.75);
-}
-
-@media (prefers-color-scheme: light) {
-  .reminder-settings .test-reminder-btn {
-    background: #f8fafc;
-    color: #1f2937;
-    border-color: rgba(59, 130, 246, 0.35);
-  }
-}
 
 .setting-group {
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 }
 
 .toggle-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.55);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
 .toggle-row.disabled {
@@ -748,20 +666,20 @@ select::-webkit-scrollbar-thumb:hover {
 }
 
 .toggle-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #f8fafc;
 }
 
 .toggle-subtitle {
-  font-size: 12px;
-  color: rgba(226, 232, 240, 0.7);
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.6);
 }
 
 .toggle-switch {
   position: relative;
-  width: 52px;
-  height: 28px;
+  width: 44px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
 }
@@ -783,14 +701,14 @@ select::-webkit-scrollbar-thumb:hover {
 .toggle-slider::before {
   content: "";
   position: absolute;
-  height: 22px;
-  width: 22px;
+  height: 18px;
+  width: 18px;
   right: 3px;
   top: 3px;
   border-radius: 50%;
   background: #f8fafc;
   transition: transform 0.2s ease;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.3);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3);
 }
 
 .toggle-switch input:checked+.toggle-slider {
@@ -798,26 +716,26 @@ select::-webkit-scrollbar-thumb:hover {
 }
 
 .toggle-switch input:checked+.toggle-slider::before {
-  transform: translateX(-24px);
+  transform: translateX(-20px);
 }
 
 .setting-group label {
   display: block;
-  margin-bottom: 12px;
-  font-size: 15px;
+  margin-bottom: 8px;
+  font-size: 14px;
   font-weight: 500;
   color: #f1f5f9;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.1px;
 }
 
 .reminder-slider {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.55);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
 .reminder-slider.disabled {
@@ -908,38 +826,31 @@ select::-webkit-scrollbar-thumb:hover {
 }
 
 .setting-group small {
-  color: rgba(209, 166, 123, 0.8);
-  font-size: 13px;
-  margin-top: 10px;
+  color: rgba(209, 166, 123, 0.75);
+  font-size: 12px;
+  margin-top: 6px;
   display: block;
-  line-height: 1.5;
+  line-height: 1.4;
   letter-spacing: 0.1px;
+  opacity: 0.8;
 }
 
 /* Custom Scrollbar for entire app */
 body::-webkit-scrollbar {
-  width: 12px;
-  background: transparent;
+  width: 8px;
 }
 
 body::-webkit-scrollbar-track {
   background: rgba(15, 23, 42, 0.8);
-  border-radius: 0;
-  border: none;
 }
 
 body::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, rgba(209, 166, 123, 0.8) 0%, rgba(209, 166, 123, 0.6) 100%);
-  border-radius: 0;
-  border: 2px solid rgba(15, 23, 42, 0.8);
+  border-radius: 4px;
 }
 
 body::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, rgb(209, 166, 123) 0%, rgba(209, 166, 123, 0.8) 100%);
-}
-
-body::-webkit-scrollbar-corner {
-  background: rgba(15, 23, 42, 0.8);
 }
 
 /* Custom Scrollbar for container */
