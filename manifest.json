@@ -12,7 +12,8 @@
   ],
   "host_permissions": [
     "https://ipapi.co/*",
-    "http://ip-api.com/*"
+    "http://ip-api.com/*",
+    "https://api.aladhan.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
