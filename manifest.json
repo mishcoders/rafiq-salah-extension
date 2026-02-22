@@ -8,8 +8,11 @@
   "permissions": [
     "storage",
     "alarms",
-    "notifications",
-    "geolocation"
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://ipapi.co/*",
+    "http://ip-api.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
