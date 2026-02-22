@@ -1,162 +1,163 @@
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>رفيق الصلاة</title>
-    <link rel="stylesheet" href="./styles/index.css" />
-  </head>
-  <body>
-    <div class="container">
-      <div class="header">
-        <h1><img src="icon.png" class="icon" alt="رفيق الصلاة"> رفيق الصلاة</h1>
-        <div class="countdown hidden" id="countdownText"></div>
-      </div>
 
-      <!-- Location Display -->
-      <div id="locationDisplay" class="location-section hidden">
-        <div class="location-text" id="locationText"></div>
-        <button class="edit-btn" id="editLocationBtn">تغيير</button>
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>رفيق الصلاة</title>
+  <link rel="stylesheet" href="./styles/index.css" />
+</head>
 
-      <!-- Location Selection -->
-      <div id="locationSelection" class="selection-section">
-        <h3>تغيير الموقع</h3>
-
-        <div class="select-container">
-          <label for="countrySelect">الدولة</label>
-          <select id="countrySelect">
-            <option value="">اختر دولة</option>
-          </select>
-        </div>
-
-        <div class="select-container">
-          <label for="citySelect">المدينة</label>
-          <select id="citySelect" disabled>
-            <option value="">اختر المدينة</option>
-          </select>
-        </div>
-
-        <button class="btn btn-primary" id="saveLocationBtn" disabled>
-          حفظ الموقع
-        </button>
-      </div>
-
-      <!-- Prayer Times Display -->
-      <div id="prayerTimesSection" class="hidden">
-        <div class="prayer-info">
-          <div class="next-prayer" id="nextPrayerText">
-            🕌 الصلاة القادمة: العصر بعد ساعة و23 دقيقة
-          </div>
-          <div class="calculation-method" id="calculationMethodText"></div>
-        </div>
-
-        <div class="prayer-cards" id="prayerCards"></div>
-
-        <div class="controls">
-          <button class="btn btn-primary" id="reminderToggle">
-            🔔 تفعيل التذكير
-          </button>
-
-          <button class="btn btn-secondary" id="settingsToggle">
-            ⚙️ إعدادات التذكير
-          </button>
-
-          <!-- Reminder Settings Panel -->
-          <div id="reminderSettings" class="reminder-settings hidden">
-            <h4>إعدادات التذكير:</h4>
-            <div class="setting-group">
-              <div class="toggle-row">
-                <div class="toggle-info">
-                  <div class="toggle-title">تذكير قبل الصلاة</div>
-                  <div class="toggle-subtitle">تنبيه قبل الموعد حسب الدقائق المحددة</div>
-                </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="preReminderToggle" />
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-            </div>
-
-            <div class="setting-group">
-              <div class="toggle-row">
-                <div class="toggle-info">
-                  <div class="toggle-title">تنبيه وقت الصلاة</div>
-                  <div class="toggle-subtitle">تنبيه عند دخول وقت الصلاة مباشرة</div>
-                </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="exactReminderToggle" />
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-            </div>
-
-            <div class="setting-group">
-              <label for="reminderTimeSlider">التذكير قبل الصلاة بـ:</label>
-              <div class="reminder-slider" id="reminderTimeSliderWrap">
-                <input
-                  type="range"
-                  id="reminderTimeSlider"
-                  min="0"
-                  max="4"
-                  step="1"
-                  value="1"
-                />
-                <div class="reminder-slider-labels" role="list">
-                  <button type="button" class="reminder-slider-label" data-value="1">1 د</button>
-                  <button type="button" class="reminder-slider-label active" data-value="5">5 د</button>
-                  <button type="button" class="reminder-slider-label" data-value="10">10 د</button>
-                  <button type="button" class="reminder-slider-label" data-value="15">15 د</button>
-                  <button type="button" class="reminder-slider-label" data-value="30">30 د</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="setting-group">
-              <label for="calculationMethod">طريقة الحساب:</label>
-              <div class="select-container">
-                <select id="calculationMethod">
-                  <option value="auto">اختيار تلقائي (موصى به)</option>
-                  <option value="2">الجمعية الإسلامية لأمريكا الشمالية</option>
-                  <option value="3">رابطة العالم الإسلامي</option>
-                  <option value="4">جامعة أم القرى (السعودية)</option>
-                  <option value="5">الهيئة المصرية العامة للمساحة</option>
-                  <option value="7">جامعة العلوم التطبيقية، كراتشي</option>
-                  <option value="8">معهد الجيوفيزياء، جامعة طهران</option>
-                  <option value="9">الخليج العربي</option>
-                  <option value="10">قطر</option>
-                </select>
-              </div>
-              <small> 💡 الاختيار التلقائي يحدد أفضل طريقة حساب لدولتك </small>
-            </div>
-
-            <button class="btn btn-primary" id="saveSettings">
-              حفظ الإعدادات
-            </button>
-            <button class="btn btn-secondary test-reminder-btn" id="testReminderBtn">
-              🧪 اختبار التنبيه
-            </button>
-          </div>
-
-          <a
-            href="https://rafiq-salah.vercel.app"
-            target="_blank"
-            class="btn btn-secondary"
-            >📅 عرض جميع المواقيت</a
-          >
-        </div>
-      </div>
-
-      <!-- Loading State -->
-      <div id="loadingState" class="loading hidden">
-        جاري تحميل رفيق الصلاة...
-      </div>
-
-      <!-- Error State -->
-      <div id="errorState" class="error hidden"></div>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>
+        <img src="icon.png" class="icon" alt="رفيق الصلاة">
+        رفيق الصلاة
+        <a href="https://rafiq-salah.vercel.app" target="_blank" class="website-btn" title="الموقع الرسمي"
+          aria-label="فتح الموقع الرسمي">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+        </a>
+      </h1>
     </div>
 
-    <!-- Scripts loaded in dependency order -->
-    <script src="popup.js"></script>
-  </body>
+    <!-- Location Display -->
+    <div id="locationDisplay" class="location-section hidden">
+      <div class="location-text" id="locationText"></div>
+      <button class="edit-btn" id="editLocationBtn">تغيير</button>
+    </div>
+
+    <!-- Location Selection -->
+    <div id="locationSelection" class="selection-section">
+      <h3>تغيير الموقع</h3>
+
+      <div class="select-container">
+        <label for="countrySelect">الدولة</label>
+        <select id="countrySelect">
+          <option value="">اختر دولة</option>
+        </select>
+      </div>
+
+      <div class="select-container">
+        <label for="citySelect">المدينة</label>
+        <select id="citySelect" disabled>
+          <option value="">اختر المدينة</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" id="saveLocationBtn" disabled>
+        حفظ الموقع
+      </button>
+    </div>
+
+    <!-- Prayer Times Display -->
+    <div id="prayerTimesSection" class="hidden">
+      <div class="prayer-info">
+        <div class="next-prayer" id="nextPrayerText">
+          🕌 الصلاة القادمة: العصر بعد ساعة و23 دقيقة
+        </div>
+        <div class="calculation-method" id="calculationMethodText"></div>
+      </div>
+
+      <div class="prayer-cards" id="prayerCards"></div>
+
+      <div class="controls">
+        <button class="btn btn-primary" id="reminderToggle">
+          🔔 تفعيل التذكير
+        </button>
+
+        <button class="btn btn-secondary" id="settingsToggle">
+          ⚙️ إعدادات التذكير
+        </button>
+
+        <!-- Reminder Settings Panel -->
+        <div id="reminderSettings" class="reminder-settings hidden">
+          <h4>إعدادات التذكير:</h4>
+          <div class="setting-group">
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-title">تذكير قبل الصلاة</div>
+                <div class="toggle-subtitle">تنبيه قبل الموعد حسب الدقائق المحددة</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="preReminderToggle" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-title">تنبيه وقت الصلاة</div>
+                <div class="toggle-subtitle">تنبيه عند دخول وقت الصلاة مباشرة</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="exactReminderToggle" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label for="reminderTimeSlider">التذكير قبل الصلاة بـ:</label>
+            <div class="reminder-slider" id="reminderTimeSliderWrap">
+              <input type="range" id="reminderTimeSlider" min="0" max="4" step="1" value="1" />
+              <div class="reminder-slider-labels" role="list">
+                <button type="button" class="reminder-slider-label" data-value="1">1 د</button>
+                <button type="button" class="reminder-slider-label active" data-value="5">5 د</button>
+                <button type="button" class="reminder-slider-label" data-value="10">10 د</button>
+                <button type="button" class="reminder-slider-label" data-value="15">15 د</button>
+                <button type="button" class="reminder-slider-label" data-value="30">30 د</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label for="calculationMethod">طريقة الحساب:</label>
+            <div class="select-container">
+              <select id="calculationMethod">
+                <option value="auto">اختيار تلقائي (موصى به)</option>
+                <option value="2">الجمعية الإسلامية لأمريكا الشمالية</option>
+                <option value="3">رابطة العالم الإسلامي</option>
+                <option value="4">جامعة أم القرى (السعودية)</option>
+                <option value="5">الهيئة المصرية العامة للمساحة</option>
+                <option value="7">جامعة العلوم التطبيقية، كراتشي</option>
+                <option value="8">معهد الجيوفيزياء، جامعة طهران</option>
+                <option value="9">الخليج العربي</option>
+                <option value="10">قطر</option>
+              </select>
+            </div>
+            <small> 💡 الاختيار التلقائي يحدد أفضل طريقة حساب لدولتك </small>
+          </div>
+
+          <button class="btn btn-primary" id="saveSettings">
+            حفظ الإعدادات
+          </button>
+          <button class="btn btn-secondary test-reminder-btn" id="testReminderBtn">
+            🧪 اختبار التنبيه
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="loading hidden">
+      جاري تحميل رفيق الصلاة...
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="error hidden"></div>
+  </div>
+
+  <!-- Scripts loaded in dependency order -->
+  <script src="popup.js"></script>
+</body>
+
 </html>
