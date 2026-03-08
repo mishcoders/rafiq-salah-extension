@@ -46,7 +46,8 @@ const CALCULATION_METHODS = {
 
 // DOM elements
 let countrySelect, citySelect, saveLocationBtn, locationDisplay, locationText, editLocationBtn;
-let locationSelection, prayerTimesSection, loadingState, errorState;
+let locationSelection, locationPrompt, prayerTimesSection, loadingState, errorState;
+let autoDetectBtn, manualSelectBtn, locationError;
 let nextPrayerText, countdownText, calculationMethodText, prayerCards;
 
 // Global variables
@@ -85,9 +86,13 @@ function initializeElements() {
     locationText = document.getElementById('locationText');
     editLocationBtn = document.getElementById('editLocationBtn');
     locationSelection = document.getElementById('locationSelection');
+    locationPrompt = document.getElementById('locationPrompt');
     prayerTimesSection = document.getElementById('prayerTimesSection');
     loadingState = document.getElementById('loadingState');
     errorState = document.getElementById('errorState');
+    autoDetectBtn = document.getElementById('autoDetectBtn');
+    manualSelectBtn = document.getElementById('manualSelectBtn');
+    locationError = document.getElementById('locationError');
     nextPrayerText = document.getElementById('nextPrayerText');
     countdownText = document.getElementById('countdownText');
     calculationMethodText = document.getElementById('calculationMethodText');
@@ -178,36 +183,88 @@ function updateSaveButton() {
 }
 
 async function checkUserLocation() {
-    const result = await chrome.storage.local.get(['selectedCountry', 'selectedCity', 'locationDetected']);
+    const result = await chrome.storage.local.get(['selectedCountry', 'selectedCity', 'locationPromptSeen']);
 
     if (result.selectedCountry && result.selectedCity) {
         showPrayerTimesSection(result.selectedCountry, result.selectedCity);
-    } else if (!result.locationDetected) {
-        // First time user - attempt automatic location detection
-        await attemptAutoLocationDetection();
+    } else if (!result.locationPromptSeen) {
+        // First time user - show location prompt
+        showLocationPrompt();
     } else {
         showLocationSelection();
     }
 }
 
+function showLocationPrompt(isEdit = false) {
+    locationPrompt?.classList.remove('hidden');
+    locationSelection?.classList.add('hidden');
+    locationDisplay?.classList.add('hidden');
+    prayerTimesSection?.classList.add('hidden');
+    hideLocationError();
+
+    // Update title based on mode (first time vs edit)
+    const titleElement = locationPrompt?.querySelector('h3');
+    const textElement = locationPrompt?.querySelector('.location-prompt-text');
+
+    if (titleElement && textElement) {
+        if (isEdit) {
+            titleElement.textContent = 'تغيير الموقع';
+            textElement.textContent = 'اختر كيف تريد تحديث موقعك للحصول على أوقات الصلاة بدقة';
+        } else {
+            titleElement.textContent = 'حدد موقعك';
+            textElement.textContent = 'اختر كيف تريد تحديد موقعك للحصول على أوقات الصلاة بدقة';
+        }
+    }
+}
+
+function updatePromptTitleForEdit() {
+    showLocationPrompt(true);
+}
+
+function showLocationError(message) {
+    if (locationError) {
+        locationError.textContent = message;
+        locationError.classList.remove('hidden');
+        // Re-trigger animation
+        locationError.style.animation = 'none';
+        locationError.offsetHeight; // Trigger reflow
+        locationError.style.animation = '';
+    }
+}
+
+function hideLocationError() {
+    locationError?.classList.add('hidden');
+}
+
+function setLocationPromptLoading(isLoading) {
+    if (autoDetectBtn) {
+        if (isLoading) {
+            autoDetectBtn.classList.add('btn-loading');
+            autoDetectBtn.disabled = true;
+            manualSelectBtn.disabled = true;
+        } else {
+            autoDetectBtn.classList.remove('btn-loading');
+            autoDetectBtn.disabled = false;
+            manualSelectBtn.disabled = false;
+        }
+    }
+}
+
 function showLocationSelection() {
-    locationDisplay.classList.add('hidden');
-    prayerTimesSection.classList.add('hidden');
-    locationSelection.classList.remove('hidden');
+    locationDisplay?.classList.add('hidden');
+    prayerTimesSection?.classList.add('hidden');
+    locationPrompt?.classList.add('hidden');
+    locationSelection?.classList.remove('hidden');
 }
 
 // Automatic location detection functions
 async function attemptAutoLocationDetection() {
-    try {
-        // Update loading message for location detection
-        updateLoadingMessage('جاري تحديد موقعك تلقائياً...');
-        showLoading(true);
+    setLocationPromptLoading(true);
+    hideLocationError();
 
+    try {
         const position = await getCurrentPosition();
         const { latitude, longitude } = position.coords;
-
-        // Update loading message for finding closest city
-        updateLoadingMessage('جاري البحث عن أقرب مدينة...');
 
         // Find closest city from our data
         const closestLocation = await findClosestCity(latitude, longitude);
@@ -217,27 +274,51 @@ async function attemptAutoLocationDetection() {
             await chrome.storage.local.set({
                 selectedCountry: closestLocation.countryCode,
                 selectedCity: closestLocation.cityName,
-                locationDetected: true,
+                locationPromptSeen: true,
                 autoDetected: true
             });
 
             // Show prayer times for detected location
             await showPrayerTimesSection(closestLocation.countryCode, closestLocation.cityName);
         } else {
-            // Fallback to manual selection
-            await chrome.storage.local.set({ locationDetected: true });
-            showLocationSelection();
+            // No nearby city found - show error and allow manual selection
+            showLocationError('لم يتم العثور على مدينة قريبة من موقعك. يرجى اختيار الموقع يدوياً.');
+            setTimeout(() => {
+                showLocationSelection();
+            }, 2000);
         }
     } catch (error) {
-        console.log('Auto location detection failed:', error);
-        // Mark as attempted and show manual selection
-        await chrome.storage.local.set({ locationDetected: true });
-        showLocationSelection();
+        console.error('Auto location detection failed:', error);
+
+        // Handle specific error types
+        let errorMessage = 'حدث خطأ أثناء تحديد الموقع. يرجى المحاولة مرة أخرى أو اختيار الموقع يدوياً.';
+
+        if (error.name === 'PermissionDeniedError' || error.code === 1) {
+            errorMessage = 'تم رفض إذن الوصول للموقع. يرجى السماح بالوصول من إعدادات المتصفح أو اختيار الموقع يدوياً.';
+        } else if (error.name === 'PositionUnavailableError' || error.code === 2) {
+            errorMessage = 'معلومات الموقع غير متوفرة حالياً. يرجى التحقق من اتصال الإنترنت أو اختيار الموقع يدوياً.';
+        } else if (error.name === 'TimeoutError' || error.code === 3) {
+            errorMessage = 'انتهت مهلة تحديد الموقع. يرجى المحاولة مرة أخرى أو اختيار الموقع يدوياً.';
+        } else if (!navigator.geolocation) {
+            errorMessage = 'متصفحك لا يدعم تحديد الموقع الجغرافي. يرجى اختيار الموقع يدوياً.';
+        }
+
+        showLocationError(errorMessage);
     } finally {
-        showLoading(false);
-        // Reset loading message
-        updateLoadingMessage('جاري تحميل رفيق الصلاة...');
+        setLocationPromptLoading(false);
     }
+}
+
+function proceedToManualSelection() {
+    // Mark that user has seen the prompt
+    chrome.storage.local.set({ locationPromptSeen: true });
+    showLocationSelection();
+
+    // Reset selections for fresh manual selection
+    countrySelect.value = '';
+    citySelect.innerHTML = '<option value="">اختر المدينة</option>';
+    citySelect.disabled = true;
+    updateSaveButton();
 }
 
 // Update loading message
@@ -423,6 +504,7 @@ async function showPrayerTimesSection(countryCode, cityName) {
         locationText.textContent = `${city.ar}, ${country.name}${autoDetectedText}`;
         locationDisplay.classList.remove('hidden');
         locationSelection.classList.add('hidden');
+        locationPrompt?.classList.add('hidden');
 
         await loadPrayerTimes(countryCode, cityName);
         await updateReminderToggle();
@@ -763,12 +845,17 @@ function setupEventListeners() {
     });
 
     editLocationBtn.addEventListener('click', () => {
-        showLocationSelection();
-        // Reset selections
-        countrySelect.value = '';
-        citySelect.innerHTML = '<option value="">اختر المدينة</option>';
-        citySelect.disabled = true;
-        updateSaveButton();
+        showLocationPrompt();
+        updatePromptTitleForEdit();
+    });
+
+    // Location prompt buttons
+    autoDetectBtn?.addEventListener('click', () => {
+        attemptAutoLocationDetection();
+    });
+
+    manualSelectBtn?.addEventListener('click', () => {
+        proceedToManualSelection();
     });
 
     preReminderToggle.addEventListener('change', () => {
