@@ -1,0 +1,122 @@
+{
+  "app": {
+    "name": "Prayer Pal",
+    "title": "Prayer Pal",
+    "officialWebsite": "Official Website"
+  },
+  "location": {
+    "change": "Change",
+    "selectLocation": "Select Location",
+    "changeLocation": "Change Location",
+    "selectCountry": "Country",
+    "selectCity": "City",
+    "saveLocation": "Save Location",
+    "chooseCountry": "Choose a country",
+    "chooseCity": "Choose a city",
+    "currentLocation": "Current Location",
+    "autoDetected": "Auto-detected",
+    "showMore": "Show More Countries",
+    "showLess": "Show Less",
+    "showMoreHint": "Can't find your country? Click to show all countries"
+  },
+  "locationPrompt": {
+    "setLocation": "Set Your Location",
+    "description": "Choose how you want to determine your location to get accurate prayer times",
+    "changeDescription": "Choose how you want to update your location to get accurate prayer times",
+    "autoDetect": "Auto-detect Location",
+    "manualSelect": "Select Location Manually",
+    "noNearbyCity": "No nearby city found. Please select location manually.",
+    "permissionDenied": "Location access permission denied. Please allow access from browser settings or select location manually.",
+    "positionUnavailable": "Location information is currently unavailable. Please check your internet connection or select location manually.",
+    "timeout": "Location detection timed out. Please try again or select location manually.",
+    "notSupported": "Your browser does not support geolocation. Please select location manually.",
+    "error": "An error occurred while detecting location. Please try again or select location manually."
+  },
+  "prayer": {
+    "fajr": "Fajr",
+    "sunrise": "Sunrise",
+    "dhuhr": "Dhuhr",
+    "asr": "Asr",
+    "maghrib": "Maghrib",
+    "isha": "Isha",
+    "nextPrayer": "Next Prayer",
+    "next": "Next",
+    "timeUntil": "in {time}",
+    "hour": "hour",
+    "hours": "hours",
+    "minute": "minute",
+    "minutes": "minutes",
+    "at": "at",
+    "am": "AM",
+    "pm": "PM"
+  },
+  "settings": {
+    "title": "Reminder Settings",
+    "preReminder": {
+      "title": "Pre-prayer Reminder",
+      "subtitle": "Alert before prayer time based on selected minutes"
+    },
+    "exactReminder": {
+      "title": "Exact Prayer Time Alert",
+      "subtitle": "Alert when prayer time begins"
+    },
+    "reminderTime": "Remind before prayer by:",
+    "calculationMethod": "Calculation Method:",
+    "autoSelectHint": "Auto selection chooses the best calculation method for your country"
+  },
+  "calculationMethods": {
+    "auto": "Auto Select (Recommended)",
+    "autoWithMethod": "Auto Select ({method})",
+    "2": "Islamic Society of North America",
+    "3": "Muslim World League",
+    "4": "Umm Al-Qura University (Saudi Arabia)",
+    "5": "Egyptian General Authority of Survey",
+    "7": "University of Islamic Sciences, Karachi",
+    "8": "Institute of Geophysics, University of Tehran",
+    "9": "Gulf Region",
+    "10": "Qatar",
+    "method": "Method: {method}"
+  },
+  "reminderTimes": {
+    "1min": "1 min",
+    "5min": "5 min",
+    "10min": "10 min",
+    "15min": "15 min",
+    "30min": "30 min"
+  },
+  "buttons": {
+    "settings": "⚙️ Reminder Settings",
+    "done": "Done",
+    "postpone": "Postpone 5 minutes",
+    "ok": "OK"
+  },
+  "loading": "Loading Prayer Pal...",
+  "errors": {
+    "loadingCities": "Error loading city data",
+    "loadingPrayerTimes": "Error loading prayer times. Please try again.",
+    "schedulingAlarms": "An error occurred while scheduling reminders. Please try again."
+  },
+  "notifications": {
+    "welcome": {
+      "title": "Welcome to Prayer Pal 🕌",
+      "message": "Extension installed successfully. Select your location to start receiving reminders."
+    },
+    "reminder": {
+      "preTitle": "Prayer Reminder 🕌",
+      "exactTitle": "Time for Prayer 🕌",
+      "preMessage": "Time for {prayer} prayer {time}",
+      "exactMessage": "Time for {prayer} prayer",
+      "postponed": "Postponed Reminder 🔔",
+      "postponedMessage": "Reminder: It's time for prayer (cannot be postponed again)",
+      "snoozeConfirmTitle": "Postponed",
+      "snoozeConfirmMessage": "You will be reminded again in 5 minutes (once only)",
+      "noMorePostponeTitle": "Cannot postpone again",
+      "noMorePostponeMessage": "This reminder has already been postponed. It's time for prayer now."
+    }
+  },
+  "language": {
+    "toggle": "EN / AR",
+    "arabic": "العربية",
+    "english": "English"
+  }
+}

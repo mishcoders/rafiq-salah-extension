@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html lang="ar">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>رفيق الصلاة</title>
+  <title data-i18n="app.name">Prayer Pal</title>
   <link rel="stylesheet" href="./styles/index.css" />
 </head>
 
@@ -12,10 +12,10 @@
   <div class="container">
     <div class="header">
       <h1>
-        <img src="icon.png" class="icon" alt="رفيق الصلاة">
-        رفيق الصلاة
-        <a href="https://rafiq-salah.vercel.app" target="_blank" class="website-btn" title="الموقع الرسمي"
-          aria-label="فتح الموقع الرسمي">
+        <img src="icon.png" class="icon" alt="Prayer Pal">
+        <span data-i18n="app.title">Prayer Pal</span>
+        <a href="https://rafiq-salah.vercel.app" target="_blank" class="website-btn"
+          data-i18n-title="app.officialWebsite" aria-label="Open official website">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
@@ -23,13 +23,16 @@
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
           </svg>
         </a>
+        <button class="lang-toggle" id="langToggle" title="Toggle Language / تبديل اللغة">
+          <span id="currentLang">AR</span>
+        </button>
       </h1>
     </div>
 
     <!-- Location Display -->
     <div id="locationDisplay" class="location-section hidden">
       <div class="location-text" id="locationText"></div>
-      <button class="edit-btn" id="editLocationBtn">تغيير</button>
+      <button class="edit-btn" id="editLocationBtn" data-i18n="location.change">Change</button>
     </div>
 
     <!-- Location Permission Prompt (First Time) -->
@@ -42,8 +45,9 @@
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
         </svg>
       </div>
-      <h3>حدد موقعك</h3>
-      <p class="location-prompt-text">اختر كيف تريد تحديد موقعك للحصول على أوقات الصلاة بدقة</p>
+      <h3 data-i18n="locationPrompt.setLocation">Set Your Location</h3>
+      <p class="location-prompt-text" data-i18n="locationPrompt.description">Choose how you want to determine your
+        location to get accurate prayer times</p>
 
       <div class="location-prompt-buttons">
         <button class="btn btn-primary" id="autoDetectBtn">
@@ -56,7 +60,7 @@
             <line x1="2" y1="12" x2="4" y2="12" />
             <line x1="20" y1="12" x2="22" y2="12" />
           </svg>
-          تحديد الموقع تلقائياً
+          <span data-i18n="locationPrompt.autoDetect">Auto-detect Location</span>
         </button>
         <button class="btn btn-secondary" id="manualSelectBtn">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -64,7 +68,7 @@
             <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
             <circle cx="12" cy="10" r="3" />
           </svg>
-          اختيار الموقع يدوياً
+          <span data-i18n="locationPrompt.manualSelect">Select Location Manually</span>
         </button>
       </div>
 
@@ -73,24 +77,28 @@
 
     <!-- Location Selection -->
     <div id="locationSelection" class="selection-section hidden">
-      <h3>تغيير الموقع</h3>
+      <h3 data-i18n="location.changeLocation">Change Location</h3>
 
       <div class="select-container">
-        <label for="countrySelect">الدولة</label>
+        <label for="countrySelect" data-i18n="location.selectCountry">Country</label>
         <select id="countrySelect">
-          <option value="">اختر دولة</option>
+          <option value="" data-i18n="location.chooseCountry">Choose a country</option>
         </select>
+        <div class="show-more-container" id="showMoreContainer">
+          <small class="show-more-hint" id="showMoreHint" data-i18n="location.showMoreHint">Can't find your country? Click to show all countries</small>
+          <button class="btn btn-secondary btn-small" id="showMoreBtn" data-i18n="location.showMore">Show More Countries</button>
+        </div>
       </div>
 
       <div class="select-container">
-        <label for="citySelect">المدينة</label>
+        <label for="citySelect" data-i18n="location.selectCity">City</label>
         <select id="citySelect" disabled>
-          <option value="">اختر المدينة</option>
+          <option value="" data-i18n="location.chooseCity">Choose a city</option>
         </select>
       </div>
 
-      <button class="btn btn-primary" id="saveLocationBtn" disabled>
-        حفظ الموقع
+      <button class="btn btn-primary" id="saveLocationBtn" disabled data-i18n="location.saveLocation">
+        Save Location
       </button>
     </div>
 
@@ -98,7 +106,7 @@
     <div id="prayerTimesSection" class="hidden">
       <div class="prayer-info">
         <div class="next-prayer" id="nextPrayerText">
-          🕌 الصلاة القادمة: العصر بعد ساعة و23 دقيقة
+          🕌 Next Prayer: Asr in 1 hour and 23 minutes
         </div>
         <div class="calculation-method" id="calculationMethodText"></div>
       </div>
@@ -106,19 +114,20 @@
       <div class="prayer-cards" id="prayerCards"></div>
 
       <div class="controls">
-        <button class="btn btn-primary" id="settingsToggle">
-          ⚙️ إعدادات التذكير
+        <button class="btn btn-primary" id="settingsToggle" data-i18n="buttons.settings">
+          ⚙️ Reminder Settings
         </button>
       </div>
 
       <!-- Reminder Settings Panel -->
       <div id="reminderSettings" class="reminder-settings hidden">
-        <h4>إعدادات التذكير:</h4>
+        <h4 data-i18n="settings.title">Reminder Settings:</h4>
         <div class="setting-group">
           <div class="toggle-row">
             <div class="toggle-info">
-              <div class="toggle-title">تذكير قبل الصلاة</div>
-              <div class="toggle-subtitle">تنبيه قبل الموعد حسب الدقائق المحددة</div>
+              <div class="toggle-title" data-i18n="settings.preReminder.title">Pre-prayer Reminder</div>
+              <div class="toggle-subtitle" data-i18n="settings.preReminder.subtitle">Alert before prayer time based on
+                selected minutes</div>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" id="preReminderToggle" />
@@ -130,8 +139,9 @@
         <div class="setting-group">
           <div class="toggle-row">
             <div class="toggle-info">
-              <div class="toggle-title">تنبيه وقت الصلاة</div>
-              <div class="toggle-subtitle">تنبيه عند دخول وقت الصلاة مباشرة</div>
+              <div class="toggle-title" data-i18n="settings.exactReminder.title">Exact Prayer Time Alert</div>
+              <div class="toggle-subtitle" data-i18n="settings.exactReminder.subtitle">Alert when prayer time begins
+              </div>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" id="exactReminderToggle" />
@@ -141,50 +151,57 @@
         </div>
 
         <div class="setting-group">
-          <label for="reminderTimeSlider">التذكير قبل الصلاة بـ:</label>
+          <label for="reminderTimeSlider" data-i18n="settings.reminderTime">Remind before prayer by:</label>
           <div class="reminder-slider" id="reminderTimeSliderWrap">
             <input type="range" id="reminderTimeSlider" min="0" max="4" step="1" value="1" />
             <div class="reminder-slider-labels" role="list">
-              <button type="button" class="reminder-slider-label" data-value="1">1 د</button>
-              <button type="button" class="reminder-slider-label active" data-value="5">5 د</button>
-              <button type="button" class="reminder-slider-label" data-value="10">10 د</button>
-              <button type="button" class="reminder-slider-label" data-value="15">15 د</button>
-              <button type="button" class="reminder-slider-label" data-value="30">30 د</button>
+              <button type="button" class="reminder-slider-label" data-value="1">1 <span
+                  data-i18n="prayer.minutes">min</span></button>
+              <button type="button" class="reminder-slider-label active" data-value="5">5 <span
+                  data-i18n="prayer.minutes">min</span></button>
+              <button type="button" class="reminder-slider-label" data-value="10">10 <span
+                  data-i18n="prayer.minutes">min</span></button>
+              <button type="button" class="reminder-slider-label" data-value="15">15 <span
+                  data-i18n="prayer.minutes">min</span></button>
+              <button type="button" class="reminder-slider-label" data-value="30">30 <span
+                  data-i18n="prayer.minutes">min</span></button>
             </div>
           </div>
         </div>
 
         <div class="setting-group">
-          <label for="calculationMethod">طريقة الحساب:</label>
+          <label for="calculationMethod" data-i18n="settings.calculationMethod">Calculation Method:</label>
           <div class="select-container">
             <select id="calculationMethod">
-              <option value="auto">اختيار تلقائي (موصى به)</option>
-              <option value="2">الجمعية الإسلامية لأمريكا الشمالية</option>
-              <option value="3">رابطة العالم الإسلامي</option>
-              <option value="4">جامعة أم القرى (السعودية)</option>
-              <option value="5">الهيئة المصرية العامة للمساحة</option>
-              <option value="7">جامعة العلوم التطبيقية، كراتشي</option>
-              <option value="8">معهد الجيوفيزياء، جامعة طهران</option>
-              <option value="9">الخليج العربي</option>
-              <option value="10">قطر</option>
+              <option value="auto" data-i18n="calculationMethods.auto">Auto Select (Recommended)</option>
+              <option value="2" data-i18n="calculationMethods.2">Islamic Society of North America</option>
+              <option value="3" data-i18n="calculationMethods.3">Muslim World League</option>
+              <option value="4" data-i18n="calculationMethods.4">Umm Al-Qura University (Saudi Arabia)</option>
+              <option value="5" data-i18n="calculationMethods.5">Egyptian General Authority of Survey</option>
+              <option value="7" data-i18n="calculationMethods.7">University of Islamic Sciences, Karachi</option>
+              <option value="8" data-i18n="calculationMethods.8">Institute of Geophysics, University of Tehran</option>
+              <option value="9" data-i18n="calculationMethods.9">Gulf Region</option>
+              <option value="10" data-i18n="calculationMethods.10">Qatar</option>
             </select>
           </div>
-          <small> 💡 الاختيار التلقائي يحدد أفضل طريقة حساب لدولتك </small>
+          <small data-i18n="settings.autoSelectHint">Auto selection chooses the best calculation method for your
+            country</small>
         </div>
 
       </div>
     </div>
 
     <!-- Loading State -->
-    <div id="loadingState" class="loading hidden">
-      جاري تحميل رفيق الصلاة...
-    </div>
+    <div id="loadingState" class="loading hidden" data-i18n="loading">Loading Prayer Pal...</div>
 
     <!-- Error State -->
     <div id="errorState" class="error hidden"></div>
   </div>
 
   <!-- Scripts loaded in dependency order -->
+  <script src="data/country-translations.js"></script>
+  <script src="data/city-translations.js"></script>
+  <script src="i18n.js"></script>
   <script src="popup.js"></script>
 </body>
 
