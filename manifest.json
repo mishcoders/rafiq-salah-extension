@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Prayer Pal - رفيق الصلاة",
   "version": "2.7.4",
-  "description": "إكستنشن رفيق الصلاة للدول العربية مع تذكير قابل للتخصيص وطرق حساب متعددة",
+  "description": "Prayer times extension with support for all countries and bilingual interface (Arabic/English)",
   "homepage_url": "https://rafiq-salah.vercel.app",
   "author": "mishcoders Team",
   "permissions": [
@@ -10,6 +10,11 @@
     "alarms",
     "notifications",
     "geolocation"
+  ],
+  "host_permissions": [
+    "https://api.aladhan.com/",
+    "https://restcountries.com/",
+    "https://countriesnow.space/"
   ],
   "action": {
     "default_popup": "popup.html",

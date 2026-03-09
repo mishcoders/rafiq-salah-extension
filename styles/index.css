@@ -982,3 +982,116 @@ body::-webkit-scrollbar-thumb:hover {
 .container::-webkit-scrollbar-corner {
   background: rgba(15, 23, 42, 0.6);
 }
+
+/* Language Toggle Button */
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 30px;
+  padding: 0;
+  background: rgba(209, 166, 123, 0.15);
+  border: 1px solid rgba(209, 166, 123, 0.4);
+  border-radius: 6px;
+  color: rgb(209, 166, 123);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.lang-toggle:hover {
+  background: rgba(209, 166, 123, 0.25);
+  border-color: rgba(209, 166, 123, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(209, 166, 123, 0.2);
+}
+
+/* LTR Support - when document dir="ltr" */
+html[dir="ltr"] body {
+  direction: ltr;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+html[dir="ltr"] select {
+  direction: ltr;
+  padding-left: 16px;
+  padding-right: 40px;
+}
+
+html[dir="ltr"] .select-container::after {
+  left: auto;
+  right: 16px;
+}
+
+html[dir="ltr"] .prayer-card {
+  direction: ltr;
+}
+
+html[dir="ltr"] .location-section {
+  direction: ltr;
+}
+
+html[dir="ltr"] .toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+html[dir="ltr"] .toggle-slider::before {
+  left: 3px;
+  right: auto;
+}
+
+html[dir="ltr"] .lang-toggle {
+  margin-left: 8px;
+  margin-right: 0;
+}
+
+html[dir="ltr"] .website-btn {
+  margin-right: 4px;
+  margin-left: 0;
+}
+
+html[dir="rtl"] .lang-toggle {
+  margin-right: 8px;
+  margin-left: 0;
+}
+
+/* RTL Support - ensure proper styling when dir="rtl" */
+html[dir="rtl"] body {
+  direction: rtl;
+  font-family: 'Cairo', 'Noto Sans Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* For mixed language content */
+[lang="en"] {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+[lang="ar"] {
+  font-family: 'Cairo', 'Noto Sans Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Show more/less countries toggle UI */
+.show-more-container {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.show-more-hint {
+  display: block;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  margin-bottom: 6px;
+  font-style: italic;
+}
+
+.btn-small {
+  padding: 4px 12px;
+  font-size: 12px;
+  min-height: 28px;
+}

@@ -1,12 +1,10 @@
-// Prayer names in Arabic
-const PRAYER_NAMES = {
-    'Fajr': 'الفجر',
-    'Sunrise': 'الشروق',
-    'Dhuhr': 'الظهر',
-    'Asr': 'العصر',
-    'Maghrib': 'المغرب',
-    'Isha': 'العشاء'
-};
+/**
+ * Prayer Pal Background Script
+ * Handles alarms, notifications, and prayer time scheduling
+ */
+
+// Prayer names keys for i18n
+const PRAYER_KEYS = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
 // Initialize background script
 chrome.runtime.onInstalled.addListener(async () => {
@@ -16,15 +14,22 @@ chrome.runtime.onInstalled.addListener(async () => {
     // Send a welcome notification
     setTimeout(async () => {
         try {
+            const lang = await getLanguage();
+            const title = lang === 'ar'
+                ? 'مرحباً بك في رفيق الصلاة  🕌'
+                : 'Welcome to Prayer Pal 🕌';
+            const message = lang === 'ar'
+                ? 'تم تثبيت الإكستنشن بنجاح. اختر موقعك لبدء التذكير.'
+                : 'Extension installed successfully. Select your location to start receiving reminders.';
+
             await chrome.notifications.create('welcome', {
                 type: 'basic',
                 iconUrl: 'icon.png',
-                title: 'مرحباً بك في رفيق الصلاة  🕌',
-                message: 'تم تثبيت الإكستنشن بنجاح. اختر موقعك لبدء التذكير.',
+                title: title,
+                message: message,
                 priority: 1
             });
 
-            // Clear welcome notification after 5 seconds
             setTimeout(() => {
                 chrome.notifications.clear('welcome');
             }, 5000);
@@ -34,58 +39,62 @@ chrome.runtime.onInstalled.addListener(async () => {
     }, 1000);
 });
 
+// Get current language from storage
+async function getLanguage() {
+    const result = await chrome.storage.local.get(['selectedLanguage']);
+    return result.selectedLanguage || 'ar';
+}
+
 // Keep service worker alive
 function setupKeepAlive() {
-    // Set up a recurring alarm to keep service worker active
     chrome.alarms.create('keepAlive', {
-        delayInMinutes: 0.1, // Start immediately
-        periodInMinutes: 1 // Repeat every minute
+        delayInMinutes: 0.1,
+        periodInMinutes: 1
     });
 }
 
 // Handle alarms
 chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === 'keepAlive') {
-        // Keep service worker active
         return;
     }
 
     if (alarm.name === 'dailyUpdate') {
         await updatePrayerTimesDaily();
-        // Also clean up old postponed reminders and postpone tracker daily
         await cleanupOldPostponedReminders();
         await cleanupOldPostponeTracker();
     } else if (alarm.name.startsWith('prayer_')) {
         await handlePrayerReminder(alarm.name);
-        // Set up alarm for next day for this prayer
         await setupNextDayAlarm(alarm.name);
     } else if (alarm.name.startsWith('snooze_')) {
-        // Validate if we should still show the postponed reminder
         const shouldShow = await validateReminderTime();
 
         if (shouldShow) {
             const notificationId = `snooze_reminder_${Date.now()}`;
+            const lang = await getLanguage();
 
-            // This is a postponed reminder - show notification without postpone button
+            const title = lang === 'ar' ? 'تذكير مؤجل 🔔' : 'Postponed Reminder 🔔';
+            const message = lang === 'ar'
+                ? 'تذكير: حان وقت الصلاة (لا يمكن التأجيل مرة أخرى)'
+                : 'Reminder: It\'s time for prayer (cannot be postponed again)';
+
             chrome.notifications.create(notificationId, {
                 type: 'basic',
                 iconUrl: 'icon.png',
-                title: 'تذكير مؤجل 🔔',
-                message: 'تذكير: حان وقت الصلاة (لا يمكن التأجيل مرة أخرى)',
+                title: title,
+                message: message,
                 priority: 2,
                 requireInteraction: true,
                 buttons: [
-                    { title: 'تم' }
+                    { title: lang === 'ar' ? 'تم' : 'Done' }
                 ]
             });
 
-            // Auto-clear after 2 minutes if not interacted with
             setTimeout(() => {
                 chrome.notifications.clear(notificationId);
             }, 120000);
         }
 
-        // Clean up this postponed reminder from storage
         const postponedReminders = await chrome.storage.local.get(['postponedReminders']);
         if (postponedReminders.postponedReminders) {
             const updatedReminders = postponedReminders.postponedReminders.filter(
@@ -108,15 +117,10 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         case 'updateNotificationSettings':
             await handleNotificationSettingsUpdate();
             break;
-
-
-
     }
-    return true; // Keep message channel open for async response
+    return true;
 });
 
-
-// Helper function to validate if we're still within a valid reminder window
 async function validateReminderTime() {
     try {
         const result = await chrome.storage.local.get(['prayerTimes', 'reminderTime']);
@@ -129,7 +133,6 @@ async function validateReminderTime() {
         const now = new Date();
         const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
 
-        // Check all prayer times to see if we're within any valid reminder window
         const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
         for (const prayerName of prayers) {
@@ -138,10 +141,8 @@ async function validateReminderTime() {
                 const [hours, minutes] = prayerTimeStr.split(':').map(Number);
                 const prayerTimeMinutes = hours * 60 + minutes;
 
-                // Calculate reminder window (reminderMinutes before prayer time)
                 const reminderStartMinutes = prayerTimeMinutes - reminderMinutes;
 
-                // Check if current time is within the reminder window for this prayer
                 if (currentTimeMinutes >= reminderStartMinutes && currentTimeMinutes <= prayerTimeMinutes) {
                     return true;
                 }
@@ -150,44 +151,42 @@ async function validateReminderTime() {
 
         return false;
     } catch (error) {
-        // If there's an error, err on the side of not showing notifications
         return false;
     }
 }
 
-// Set up alarm for next day
 async function setupNextDayAlarm(alarmName) {
     const alarmParts = alarmName.split('_');
     const alarmType = alarmParts.length >= 3 ? alarmParts[1] : 'pre';
     const prayerName = alarmParts.length >= 3 ? alarmParts.slice(2).join('_') : alarmParts.slice(1).join('_');
     const result = await chrome.storage.local.get(['prayerTimes', 'reminderTime', 'preReminderEnabled', 'exactReminderEnabled', 'reminderEnabled']);
 
-    // Master reminderEnabled check removed as per user request to use individual toggles in settings
+    const reminderMinutes = result.reminderTime || 5;
+    const preEnabled = result.preReminderEnabled !== false;
+    const exactEnabled = result.exactReminderEnabled !== false;
+
+    await chrome.storage.local.set({ lastScheduleError: null });
 
     if (result.prayerTimes && result.prayerTimes[prayerName]) {
-        const reminderMinutes = result.reminderTime || 5;
         const prayerTime = result.prayerTimes[prayerName];
         const [hours, minutes] = prayerTime.split(':').map(Number);
 
-        // Calculate tomorrow's prayer time
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(hours, minutes, 0, 0);
 
-        if (alarmType === 'pre' && result.preReminderEnabled !== false) {
+        if (alarmType === 'pre' && preEnabled) {
             const tomorrowReminderTime = new Date(tomorrow.getTime() - reminderMinutes * 60 * 1000);
             scheduleAlarmSafe(alarmName, tomorrowReminderTime.getTime());
         }
 
-        if (alarmType === 'exact' && result.exactReminderEnabled !== false) {
+        if (alarmType === 'exact' && exactEnabled) {
             scheduleAlarmSafe(alarmName, tomorrow.getTime());
         }
-
     }
 }
 
 async function setupPrayerAlarms(prayerTimes, countryCode, cityName) {
-    // Clear existing prayer alarms
     const alarms = await chrome.alarms.getAll();
     for (const alarm of alarms) {
         if (alarm.name.startsWith('prayer_')) {
@@ -201,7 +200,7 @@ async function setupPrayerAlarms(prayerTimes, countryCode, cityName) {
         'preReminderEnabled',
         'exactReminderEnabled'
     ]);
-    // Treat as enabled always, individual toggles handle actual notifications
+
     const reminderMinutes = result.reminderTime || 5;
     const preEnabled = result.preReminderEnabled !== false;
     const exactEnabled = result.exactReminderEnabled !== false;
@@ -241,7 +240,6 @@ async function setupPrayerAlarms(prayerTimes, countryCode, cityName) {
         }
     });
 
-    // Store current location for daily updates
     await chrome.storage.local.set({
         currentCountryCode: countryCode,
         currentCityName: cityName
@@ -252,7 +250,19 @@ async function handlePrayerReminder(alarmName) {
     const alarmParts = alarmName.split('_');
     const alarmType = alarmParts.length >= 3 ? alarmParts[1] : 'pre';
     const prayerName = alarmParts.length >= 3 ? alarmParts.slice(2).join('_') : alarmParts.slice(1).join('_');
-    const arabicName = PRAYER_NAMES[prayerName];
+
+    const lang = await getLanguage();
+
+    const prayerNames = {
+        'Fajr': lang === 'ar' ? 'الفجر' : 'Fajr',
+        'Sunrise': lang === 'ar' ? 'الشروق' : 'Sunrise',
+        'Dhuhr': lang === 'ar' ? 'الظهر' : 'Dhuhr',
+        'Asr': lang === 'ar' ? 'العصر' : 'Asr',
+        'Maghrib': lang === 'ar' ? 'المغرب' : 'Maghrib',
+        'Isha': lang === 'ar' ? 'العشاء' : 'Isha'
+    };
+
+    const arabicName = prayerNames[prayerName];
 
     const result = await chrome.storage.local.get([
         'reminderEnabled',
@@ -271,13 +281,11 @@ async function handlePrayerReminder(alarmName) {
         return;
     }
 
-    // Validate if we're still within the reminder window
     if (result.prayerTimes && result.prayerTimes[prayerName]) {
         const now = new Date();
         const prayerTimeStr = result.prayerTimes[prayerName];
         const [hours, minutes] = prayerTimeStr.split(':').map(Number);
 
-        // Create prayer time for today
         const prayerTime = new Date();
         prayerTime.setHours(hours, minutes, 0, 0);
 
@@ -296,61 +304,82 @@ async function handlePrayerReminder(alarmName) {
         }
     }
 
-    // Create appropriate message based on reminder time
     let timeMessage;
     if (alarmType === 'pre') {
         if (reminderMinutes === 1) {
-            timeMessage = 'خلال دقيقة واحدة';
+            timeMessage = lang === 'ar' ? 'خلال دقيقة واحدة' : 'in 1 minute';
         } else if (reminderMinutes < 60) {
-            timeMessage = `خلال ${reminderMinutes} دقيقة`;
+            timeMessage = lang === 'ar'
+                ? `خلال ${reminderMinutes} دقيقة`
+                : `in ${reminderMinutes} minutes`;
         } else {
             const hours = Math.floor(reminderMinutes / 60);
             const mins = reminderMinutes % 60;
             if (mins === 0) {
-                timeMessage = `خلال ${hours} ساعة`;
+                timeMessage = lang === 'ar'
+                    ? `خلال ${hours} ساعة`
+                    : `in ${hours} hour${hours > 1 ? 's' : ''}`;
             } else {
-                timeMessage = `خلال ${hours} ساعة و${mins} دقيقة`;
+                timeMessage = lang === 'ar'
+                    ? `خلال ${hours} ساعة و${mins} دقيقة`
+                    : `in ${hours} hour${hours > 1 ? 's' : ''} and ${mins} minute${mins > 1 ? 's' : ''}`;
             }
         }
     } else {
-        timeMessage = 'الآن';
+        timeMessage = lang === 'ar' ? 'الآن' : 'Now';
     }
 
     const notificationId = `prayer_notification_${Date.now()}`;
 
-    // Show notification
     try {
-        // Check permission first
         const permission = await chrome.notifications.getPermissionLevel();
         if (permission === 'denied') {
             return;
         }
 
+        const title = alarmType === 'pre'
+            ? (lang === 'ar' ? 'تذكير الصلاة 🕌' : 'Prayer Reminder 🕌')
+            : (lang === 'ar' ? 'حان وقت الصلاة 🕌' : 'Time for Prayer 🕌');
+
+        const message = alarmType === 'pre'
+            ? (lang === 'ar'
+                ? `حان وقت صلاة ${arabicName} ${timeMessage}`
+                : `Time for ${arabicName} prayer ${timeMessage}`)
+            : (lang === 'ar'
+                ? `حان وقت صلاة ${arabicName}`
+                : `Time for ${arabicName} prayer`);
+
+        const doneButton = lang === 'ar' ? 'تم' : 'Done';
+        const postponeButton = lang === 'ar' ? 'تأجيل 5 دقائق' : 'Postpone 5 minutes';
+
         await chrome.notifications.create(notificationId, {
             type: 'basic',
             iconUrl: 'icon.png',
-            title: alarmType === 'pre' ? 'تذكير الصلاة 🕌' : 'حان وقت الصلاة 🕌',
-            message: alarmType === 'pre' ? `حان وقت صلاة ${arabicName} ${timeMessage}` : `حان وقت صلاة ${arabicName}`,
+            title: title,
+            message: message,
             priority: 2,
             requireInteraction: true,
             buttons: alarmType === 'pre'
-                ? [{ title: 'تم' }, { title: 'تأجيل 5 دقائق' }]
-                : [{ title: 'تم' }]
+                ? [{ title: doneButton }, { title: postponeButton }]
+                : [{ title: doneButton }]
         });
 
-        // Auto-clear after 2 minutes if not interacted with
         setTimeout(() => {
             chrome.notifications.clear(notificationId);
         }, 120000);
 
     } catch (error) {
-        // Fallback: try simpler notification
         try {
+            const fallbackTitle = lang === 'ar' ? 'تذكير الصلاة' : 'Prayer Reminder';
+            const fallbackMessage = alarmType === 'pre'
+                ? (lang === 'ar' ? `صلاة ${arabicName} ${timeMessage}` : `${arabicName} prayer ${timeMessage}`)
+                : (lang === 'ar' ? `حان وقت صلاة ${arabicName}` : `Time for ${arabicName} prayer`);
+
             await chrome.notifications.create(`fallback_${Date.now()}`, {
                 type: 'basic',
                 iconUrl: 'icon.png',
-                title: 'تذكير الصلاة',
-                message: alarmType === 'pre' ? `صلاة ${arabicName} ${timeMessage}` : `حان وقت صلاة ${arabicName}`
+                title: fallbackTitle,
+                message: fallbackMessage
             });
         } catch (fallbackError) {
             // Silent error handling
@@ -360,13 +389,11 @@ async function handlePrayerReminder(alarmName) {
 
 async function handleReminderToggle(enabled) {
     if (enabled) {
-        // Re-setup alarms if reminders are enabled
         const result = await chrome.storage.local.get(['prayerTimes', 'currentCountryCode', 'currentCityName']);
         if (result.prayerTimes && result.currentCountryCode && result.currentCityName) {
             setupPrayerAlarms(result.prayerTimes, result.currentCountryCode, result.currentCityName);
         }
     } else {
-        // Clear all prayer alarms if reminders are disabled
         const alarms = await chrome.alarms.getAll();
         for (const alarm of alarms) {
             if (alarm.name.startsWith('prayer_') || alarm.name.startsWith('snooze_')) {
@@ -378,16 +405,6 @@ async function handleReminderToggle(enabled) {
 
 async function handleNotificationSettingsUpdate() {
     const result = await chrome.storage.local.get(['prayerTimes', 'currentCountryCode', 'currentCityName', 'reminderEnabled']);
-    // Check removed as per user request to use individual toggles in settings
-    if (false) { // Skip old logic
-        const alarms = await chrome.alarms.getAll();
-        for (const alarm of alarms) {
-            if (alarm.name.startsWith('prayer_') || alarm.name.startsWith('snooze_')) {
-                chrome.alarms.clear(alarm.name);
-            }
-        }
-        return;
-    }
     if (result.prayerTimes && result.currentCountryCode && result.currentCityName) {
         setupPrayerAlarms(result.prayerTimes, result.currentCountryCode, result.currentCityName);
     }
@@ -399,25 +416,22 @@ function scheduleAlarmSafe(alarmName, when) {
     } catch (error) {
         chrome.storage.local.set({
             lastScheduleError: {
-                message: 'حدث خطأ أثناء جدولة التنبيهات. يرجى المحاولة مرة أخرى.',
+                message: 'An error occurred while scheduling reminders. Please try again.',
                 at: Date.now()
             }
         });
     }
 }
 
-
-
 function setupDailyUpdate() {
-    // Set up daily update at 12:01 AM
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 1, 0, 0); // 12:01 AM
+    tomorrow.setHours(0, 1, 0, 0);
 
     chrome.alarms.create('dailyUpdate', {
         when: tomorrow.getTime(),
-        periodInMinutes: 24 * 60 // Repeat every 24 hours
+        periodInMinutes: 24 * 60
     });
 }
 
@@ -429,11 +443,9 @@ async function updatePrayerTimesDaily() {
             return;
         }
 
-        // Get current date using local timezone to avoid UTC shifting
         const today = new Date();
         const dateStr = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
 
-        // Get calculation method from settings with auto-detection fallback
         const settings = await chrome.storage.local.get(['calculationMethod', 'currentCountryCode']);
         const countryMethodMap = {
             'EG': 5, 'DZ': 5, 'SD': 5, 'IQ': 3, 'MA': 5, 'SA': 4, 'YE': 3, 'JO': 3,
@@ -449,8 +461,7 @@ async function updatePrayerTimesDaily() {
             method = parseInt(settings.calculationMethod);
         }
 
-        // Fetch updated prayer times with explicit school and latitude adjustment defaults
-        const school = 0; // Shafi/Maliki/Hanbali default
+        const school = 0;
         const latitudeAdjustmentMethod = 'NONE';
         const response = await fetch(
             `https://api.aladhan.com/v1/timingsByCity/${dateStr}?city=${encodeURIComponent(result.currentCityName)}&country=${result.currentCountryCode}&method=${method}&school=${school}&latitudeAdjustmentMethod=${latitudeAdjustmentMethod}`
@@ -465,102 +476,95 @@ async function updatePrayerTimesDaily() {
         if (data.code === 200 && data.data && data.data.timings) {
             const prayerTimes = data.data.timings;
 
-            // Update stored prayer times
             await chrome.storage.local.set({
                 prayerTimes: prayerTimes,
                 lastUpdated: Date.now()
             });
 
-            // Setup new alarms for today
             await setupPrayerAlarms(prayerTimes, result.currentCountryCode, result.currentCityName);
-
-            // Prayer times updated successfully
         }
     } catch (error) {
         // Silent error handling
     }
 }
 
-// Handle notification clicks
 chrome.notifications.onClicked.addListener((notificationId) => {
     chrome.notifications.clear(notificationId);
     chrome.action.openPopup();
 });
 
-// Handle notification button clicks
 chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIndex) => {
+    const lang = await getLanguage();
+
     if (buttonIndex === 0) {
-        // "تم" button - just close
         chrome.notifications.clear(notificationId);
     } else if (buttonIndex === 1) {
-        // "تأجيل 5 دقائق" button - set snooze alarm
         chrome.notifications.clear(notificationId);
 
-        // Check if this notification has already been postponed
         const postponeTracker = await chrome.storage.local.get(['postponeTracker']) || { postponeTracker: {} };
         const tracker = postponeTracker.postponeTracker || {};
 
-        // Create a unique key for this prayer time (based on current hour to group same prayer reminders)
         const now = new Date();
         const currentHour = now.getHours();
         const trackingKey = `prayer_${currentHour}_${now.toDateString()}`;
 
-        // Check if this prayer reminder has already been postponed
         if (tracker[trackingKey]) {
-            // Already postponed once, show message and don't allow another postponement
+            const title = lang === 'ar' ? 'لا يمكن التأجيل مرة أخرى' : 'Cannot postpone again';
+            const message = lang === 'ar'
+                ? 'تم تأجيل هذا التذكير مسبقاً. حان وقت الصلاة الآن.'
+                : 'This reminder has already been postponed. It\'s time for prayer now.';
+
             chrome.notifications.create(`no_more_postpone_${Date.now()}`, {
                 type: 'basic',
                 iconUrl: 'icon.png',
-                title: 'لا يمكن التأجيل مرة أخرى',
-                message: 'تم تأجيل هذا التذكير مسبقاً. حان وقت الصلاة الآن.'
+                title: title,
+                message: message
             });
             return;
         }
 
-        // Mark this prayer as postponed
         tracker[trackingKey] = {
             postponedAt: Date.now(),
             count: 1
         };
         await chrome.storage.local.set({ postponeTracker: tracker });
 
-        const snoozeTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
+        const snoozeTime = new Date(Date.now() + 5 * 60 * 1000);
         const snoozeId = `snooze_${Date.now()}`;
 
         chrome.alarms.create(snoozeId, {
             when: snoozeTime.getTime()
         });
 
-        // Store postponed reminder info for restoration after browser restart
         const postponedReminders = await chrome.storage.local.get(['postponedReminders']) || { postponedReminders: [] };
         const reminders = postponedReminders.postponedReminders || [];
         reminders.push({
             id: snoozeId,
             scheduledTime: snoozeTime.getTime(),
             createdAt: Date.now(),
-            trackingKey: trackingKey // Store tracking key for cleanup
+            trackingKey: trackingKey
         });
 
         await chrome.storage.local.set({ postponedReminders: reminders });
 
-        // Show confirmation
+        const confirmTitle = lang === 'ar' ? 'تم التأجيل' : 'Postponed';
+        const confirmMessage = lang === 'ar'
+            ? 'سيتم تذكيرك مرة أخرى خلال 5 دقائق (لمرة واحدة فقط)'
+            : 'You will be reminded again in 5 minutes (once only)';
+
         chrome.notifications.create(`snooze_confirm_${Date.now()}`, {
             type: 'basic',
             iconUrl: 'icon.png',
-            title: 'تم التأجيل',
-            message: 'سيتم تذكيرك مرة أخرى خلال 5 دقائق (لمرة واحدة فقط)'
+            title: confirmTitle,
+            message: confirmMessage
         });
     }
 });
 
-
-
-// Clean up old alarms on startup
 chrome.runtime.onStartup.addListener(async () => {
     await restoreAlarmsOnStartup();
 });
 
-// Clean up old postponed reminders (older than 24 hours)
 async function cleanupOldPostponedReminders() {
     try {
         const postponedReminders = await chrome.storage.local.get(['postponedReminders']);
@@ -569,7 +573,7 @@ async function cleanupOldPostponedReminders() {
         const now = Date.now();
         const validReminders = postponedReminders.postponedReminders.filter(reminder => {
             const age = now - reminder.createdAt;
-            return age < 24 * 60 * 60 * 1000; // Keep reminders younger than 24 hours
+            return age < 24 * 60 * 60 * 1000;
         });
 
         await chrome.storage.local.set({ postponedReminders: validReminders });
@@ -578,7 +582,6 @@ async function cleanupOldPostponedReminders() {
     }
 }
 
-// Clean up old postpone tracker entries (older than 24 hours)
 async function cleanupOldPostponeTracker() {
     try {
         const postponeTracker = await chrome.storage.local.get(['postponeTracker']);
@@ -588,10 +591,9 @@ async function cleanupOldPostponeTracker() {
         const tracker = postponeTracker.postponeTracker;
         const cleanedTracker = {};
 
-        // Remove entries older than 24 hours
         for (const [key, value] of Object.entries(tracker)) {
             const age = now - value.postponedAt;
-            if (age < 24 * 60 * 60 * 1000) { // Keep entries younger than 24 hours
+            if (age < 24 * 60 * 60 * 1000) {
                 cleanedTracker[key] = value;
             }
         }
@@ -602,7 +604,6 @@ async function cleanupOldPostponeTracker() {
     }
 }
 
-// Restore postponed reminders that should still fire
 async function restorePostponedReminders() {
     try {
         const postponedReminders = await chrome.storage.local.get(['postponedReminders']);
@@ -612,48 +613,44 @@ async function restorePostponedReminders() {
         const validReminders = [];
 
         for (const reminder of postponedReminders.postponedReminders) {
-            // Only restore reminders that are:
-            // 1. Still in the future OR 
-            // 2. Less than 10 minutes in the past (in case browser was closed briefly)
             const timeDiff = reminder.scheduledTime - now;
-            if (timeDiff > -10 * 60 * 1000) { // -10 minutes in milliseconds
+            if (timeDiff > -10 * 60 * 1000) {
                 if (timeDiff > 0) {
-                    // Future reminder - restore the alarm
                     chrome.alarms.create(reminder.id, {
                         when: reminder.scheduledTime
                     });
                     validReminders.push(reminder);
                 } else {
-                    // Past reminder within 10 minutes - check if still valid before firing
                     const shouldFire = await validateReminderTime();
 
                     if (shouldFire) {
+                        const lang = await getLanguage();
                         const lateNotificationId = `late_snooze_reminder_${Date.now()}`;
+                        const title = lang === 'ar' ? 'تذكير مؤجل 🔔' : 'Postponed Reminder 🔔';
+                        const message = lang === 'ar'
+                            ? 'تذكير: حان وقت الصلاة (لا يمكن التأجيل مرة أخرى)'
+                            : 'Reminder: It\'s time for prayer (cannot be postponed again)';
+
                         chrome.notifications.create(lateNotificationId, {
                             type: 'basic',
                             iconUrl: 'icon.png',
-                            title: 'تذكير مؤجل 🔔',
-                            message: 'تذكير: حان وقت الصلاة (لا يمكن التأجيل مرة أخرى)',
+                            title: title,
+                            message: message,
                             priority: 2,
                             requireInteraction: true,
                             buttons: [
-                                { title: 'تم' }
+                                { title: lang === 'ar' ? 'تم' : 'Done' }
                             ]
                         });
 
-                        // Auto-clear after 2 minutes if not interacted with
                         setTimeout(() => {
                             chrome.notifications.clear(lateNotificationId);
                         }, 120000);
                     }
-
-                    // Don't add to validReminders as it's been processed
                 }
             }
-            // Reminders older than 10 minutes are discarded
         }
 
-        // Update storage with only valid reminders
         await chrome.storage.local.set({ postponedReminders: validReminders });
 
     } catch (error) {
@@ -661,13 +658,10 @@ async function restorePostponedReminders() {
     }
 }
 
-// Restore alarms when service worker wakes up
 async function restoreAlarmsOnStartup() {
     try {
-        // First restore postponed reminders
         await restorePostponedReminders();
 
-        // Clear old prayer alarms and set up fresh ones
         const result = await chrome.storage.local.get([
             'prayerTimes',
             'currentCountryCode',
@@ -679,7 +673,6 @@ async function restoreAlarmsOnStartup() {
             await setupPrayerAlarms(result.prayerTimes, result.currentCountryCode, result.currentCityName);
         }
 
-        // Ensure daily update alarm is set
         setupDailyUpdate();
         setupKeepAlive();
 
@@ -688,5 +681,4 @@ async function restoreAlarmsOnStartup() {
     }
 }
 
-// Call restore function immediately when service worker starts
 restoreAlarmsOnStartup();
